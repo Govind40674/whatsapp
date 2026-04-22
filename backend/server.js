@@ -11,9 +11,7 @@ import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-// import multer from "multer";
-// import { CloudinaryStorage } from "multer-storage-cloudinary";
-// import cloudinary from "./cloudinary.js";
+
 
 import upload from "./middlewares/upload.js";
 
@@ -38,12 +36,15 @@ const io = new Server(server, {
 // 🔹 Middleware
 // app.use(cors({ origin: true, credentials: true }));
 
-app.use(
-  cors({
-    origin:"*",
-    credentials: true,
-  }),
-);
+
+
+app.use(cors({
+  origin: [
+    "http://localhost:5174",
+    "https://looptalk-gfr8.onrender.com" // <-- replace this
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
