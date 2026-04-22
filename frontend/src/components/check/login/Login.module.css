@@ -1,0 +1,140 @@
+/* Full screen center */
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 20px;
+}
+
+/* Form box */
+.formBox {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  padding: 30px 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* Heading */
+.heading {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+/* Inputs */
+.input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+/* Button */
+.button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.button:hover {
+  background-color: #5a67d8;
+}
+
+/* Signup button */
+.signupButton {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.signupButton:hover {
+  background-color: #222;
+}
+
+/* Text */
+.switchText {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+/* Error & success */
+.error {
+  color: red;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.success {
+  color: green;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* ================= RESPONSIVE ================= */
+
+/* 📱 Mobile (small phones) */
+@media (max-width: 480px) {
+  .formBox {
+    padding: 20px 15px;
+  }
+
+  .heading {
+    font-size: 22px;
+  }
+
+  .input {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .button, .signupButton {
+    padding: 10px;
+    font-size: 14px;
+  }
+}
+
+/* 📱 Tablets */
+@media (min-width: 481px) and (max-width: 768px) {
+  .formBox {
+    max-width: 90%;
+  }
+
+  .heading {
+    font-size: 24px;
+  }
+}
+
+/* 💻 Laptops */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .formBox {
+    max-width: 380px;
+  }
+}
+
+/* 🖥 Large screens */
+@media (min-width: 1025px) {
+  .formBox {
+    max-width: 420px;
+  }
+}

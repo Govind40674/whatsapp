@@ -1,0 +1,147 @@
+/* Container - full screen center */
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  padding: 20px;
+}
+
+/* Card */
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 25px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+/* Title */
+.card h2 {
+  text-align: center;
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+/* Inputs */
+.card input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  outline: none;
+  transition: 0.3s;
+}
+
+.card input:focus {
+  border-color: #4cafef;
+  box-shadow: 0 0 5px rgba(76, 175, 239, 0.5);
+}
+
+/* File input */
+.card input[type="file"] {
+  padding: 8px;
+  background: #f9f9f9;
+  cursor: pointer;
+}
+
+/* Error text */
+.card p {
+  color: red;
+  font-size: 12px;
+  margin-top: -10px;
+}
+
+/* Button */
+.card button {
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #4cafef;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.card button:hover {
+  background: #2196f3;
+  transform: translateY(-1px);
+}
+
+/* Image Preview */
+.preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  align-self: center;
+  border: 3px solid #4cafef;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================
+   📱 MOBILE (small screens)
+========================= */
+@media (max-width: 480px) {
+  .card {
+    padding: 20px 15px;
+    border-radius: 15px;
+  }
+
+  .card h2 {
+    font-size: 20px;
+  }
+
+  .card input {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .card button {
+    font-size: 14px;
+  }
+
+  .preview {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+/* =========================
+   💻 TABLET
+========================= */
+@media (min-width: 481px) and (max-width: 768px) {
+  .card {
+    max-width: 500px;
+  }
+}
+
+/* =========================
+   🖥️ LARGE SCREEN
+========================= */
+@media (min-width: 1024px) {
+  .card {
+    max-width: 450px;
+  }
+}

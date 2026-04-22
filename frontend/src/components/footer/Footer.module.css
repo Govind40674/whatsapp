@@ -1,0 +1,73 @@
+/* FOOTER CONTAINER */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  background-color: #075e54;
+  padding: 8px 0;
+
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+/* LINKS */
+.link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: #cfcfcf;
+  font-size: 12px;
+  transition: 0.3s;
+}
+
+.link svg {
+  font-size: 22px;
+}
+
+/* ACTIVE TAB */
+.active {
+  color: white;
+  transform: scale(1.1);
+}
+
+/* HOVER (for desktop) */
+.link:hover {
+  color: white;
+}
+
+/* RESPONSIVE */
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .link span {
+    font-size: 11px;
+  }
+
+  .link svg {
+    font-size: 20px;
+  }
+}
+
+/* TABLET */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .footer {
+    max-width: 100%;
+  }
+}
+
+/* DESKTOP */
+@media (min-width: 1025px) {
+  .footer {
+    max-width: 800px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 10px 10px 0 0;
+  }
+}

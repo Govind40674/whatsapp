@@ -1,0 +1,120 @@
+/* MAIN CONTAINER */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #efeae2;
+  padding: 20px;
+}
+
+/* CARD */
+.card {
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  padding: 25px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* IMAGE */
+.image {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* DEFAULT AVATAR */
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #128c7e;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin: auto;
+}
+
+/* NAME */
+.name {
+  margin-top: 15px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* EMAIL */
+.email {
+  color: gray;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* EDIT BUTTON */
+.editBtn {
+  margin-top: 20px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 25px;
+  background: #25d366;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  transition: 0.3s;
+}
+
+.editBtn:hover {
+  background: #1ebe5d;
+  transform: scale(1.05);
+}
+
+/* LOADING */
+.loading {
+  font-size: 16px;
+}
+
+/* ========================= */
+/* RESPONSIVE */
+/* ========================= */
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .card {
+    padding: 20px;
+  }
+
+  .image,
+  .avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .name {
+    font-size: 18px;
+  }
+}
+
+/* TABLET */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .card {
+    max-width: 500px;
+  }
+}
+
+/* DESKTOP */
+@media (min-width: 1025px) {
+  .card {
+    max-width: 450px;
+  }
+}

@@ -1,0 +1,78 @@
+/* FLOATING BUTTON */
+.fab {
+  position: fixed;
+
+  /* RIGHT CORNER */
+  right: 20px;
+
+  /* JUST ABOVE FOOTER */
+  bottom: 70px; /* adjust based on footer height */
+
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+
+  background-color: #25d366; /* WhatsApp green */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+
+  /* ALWAYS ON TOP */
+  z-index: 9999;
+
+  transition: all 0.3s ease;
+}
+
+/* ICON */
+.icon {
+  color: white;
+  font-size: 20px;
+}
+
+/* HOVER EFFECT (desktop) */
+.fab:hover {
+  transform: scale(1.1);
+  background-color: #1ebe5d;
+}
+
+/* CLICK EFFECT */
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* ========================= */
+/* RESPONSIVE */
+/* ========================= */
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .fab {
+    width: 50px;
+    height: 50px;
+    right: 15px;
+    bottom: 65px;
+  }
+
+  .icon {
+    font-size: 18px;
+  }
+}
+
+/* TABLET */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .fab {
+    right: 25px;
+    bottom: 75px;
+  }
+}
+
+/* DESKTOP */
+@media (min-width: 1025px) {
+  .fab {
+    right: calc(50% - 360px); /* aligns with centered layout */
+    bottom: 80px;
+  }
+}
