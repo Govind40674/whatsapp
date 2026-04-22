@@ -26,11 +26,22 @@ const app = express();
 const server = http.createServer(app);
 
 // 🔹 Socket setup
+// const io = new Server(server, {
+//   cors: {
+//     origin: true,
+//     credentials: true,
+//   },
+// });
 const io = new Server(server, {
   cors: {
-    origin: true,
+    origin: [
+      "http://localhost:5174",
+      "https://looptalk-gfr8.onrender.com",
+    ],
     credentials: true,
   },
+  allowEIO3: true,
+  transports: ["websocket", "polling"],
 });
 
 // 🔹 Middleware
@@ -54,31 +65,55 @@ app.use(cookieParser());
 ========================= */
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log("🔥 User connected:", socket.id);
 
+  /* =========================
+     🔹 JOIN ROOM FIRST
+  ========================= */
+  socket.on("joinRoom", (roomId) => {
+    socket.join(roomId);
+    console.log(`✅ ${socket.id} joined room: ${roomId}`);
+  });
+
+  socket.on("leaveRoom", (roomId) => {
+    socket.leave(roomId);
+    console.log(`❌ ${socket.id} left room: ${roomId}`);
+  });
+
+  /* =========================
+     📞 CALLING SYSTEM
+  ========================= */
+
+  // 🔹 CALL USER
   socket.on("call-user", ({ offer, roomId }) => {
+    console.log("📤 Sending OFFER to room:", roomId);
+
     socket.to(roomId).emit("incoming-call", { offer });
   });
 
+  // 🔹 ACCEPT CALL
   socket.on("answer-call", ({ answer, roomId }) => {
+    console.log("📥 Sending ANSWER to room:", roomId);
+
     socket.to(roomId).emit("call-accepted", { answer });
   });
 
+  // 🔹 ICE CANDIDATES
   socket.on("ice-candidate", ({ candidate, roomId }) => {
+    // console.log("❄️ ICE candidate sent");
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
-  // 🔹 Join Room
-  socket.on("joinRoom", (roomId) => {
-    socket.join(roomId);
+  // 🔴 END CALL (IMPORTANT)
+  socket.on("end-call", ({ roomId }) => {
+    console.log("📴 Call ended in room:", roomId);
+    socket.to(roomId).emit("end-call");
   });
 
-  // 🔹 Leave Room
-  socket.on("leaveRoom", (roomId) => {
-    socket.leave(roomId);
-  });
+  /* =========================
+     💬 MESSAGING SYSTEM
+  ========================= */
 
-  // 🔹 Send Message
   socket.on("sendMessage", async (data) => {
     try {
       const { sender, receiver, content } = data;
@@ -94,12 +129,15 @@ io.on("connection", (socket) => {
 
       io.to(roomId).emit("receiveMessage", newMessage);
     } catch (err) {
-      console.error(err);
+      console.error("❌ Message Error:", err);
     }
   });
 
-  socket.on("disconnect", () => {
-    console.log("Disconnected:", socket.id);
+  /* =========================
+     🔌 DISCONNECT
+  ========================= */
+  socket.on("disconnect", (reason) => {
+    console.log("❌ Disconnected:", socket.id, "| Reason:", reason);
   });
 });
 
