@@ -5,46 +5,44 @@ function CallUI({ localStream, peer }) {
   const remoteVideo = useRef(null);
   const [remoteStream, setRemoteStream] = useState(null);
 
-  // ❌ MOST IMPORTANT FIX
-  if (!localStream?.current && !remoteStream) return null;
-
-  // Local video
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // 🎥 Attach LOCAL stream
   useEffect(() => {
     if (localStream?.current && localVideo.current) {
       localVideo.current.srcObject = localStream.current;
     }
-  }, [localStream]);
+  }, [localStream?.current]);
 
-  // Listen for remote stream
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // 🎥 Listen for REMOTE stream
   useEffect(() => {
-    if (!peer?.current) return;
+    const currentPeer = peer?.current;
+    if (!currentPeer) return;
 
     const handleTrack = (event) => {
+      console.log("Remote stream received");
       setRemoteStream(event.streams[0]);
     };
 
-    peer.current.addEventListener("track", handleTrack);
+    currentPeer.addEventListener("track", handleTrack);
 
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      peer.current.removeEventListener("track", handleTrack);
+      currentPeer.removeEventListener("track", handleTrack);
     };
   }, [peer]);
 
-  // Attach remote stream
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // 🎥 Attach REMOTE stream to video
   useEffect(() => {
     if (remoteStream && remoteVideo.current) {
       remoteVideo.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
+  // 🚫 render nothing if no streams
+  if (!localStream?.current && !remoteStream) return null;
+
   return (
     <div
       style={{
-        position: "absolute",   // ✅ prevents pushing chat down
+        position: "absolute",
         top: 60,
         left: 0,
         width: "100%",
@@ -52,7 +50,7 @@ function CallUI({ localStream, peer }) {
         background: "black",
       }}
     >
-      {/* Remote Video */}
+      {/* 🔵 Remote Video */}
       <video
         ref={remoteVideo}
         autoPlay
@@ -64,7 +62,7 @@ function CallUI({ localStream, peer }) {
         }}
       />
 
-      {/* Local Video */}
+      {/* 🟢 Local Video */}
       <video
         ref={localVideo}
         autoPlay

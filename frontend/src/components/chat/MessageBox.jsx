@@ -28,10 +28,16 @@ function MessageBox() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const res = await axios.get(`${import.meta.env.VITE_URL}/user`, {
-        params: { email: decodedEmail },
-      });
-      setChattingWith(res.data);
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_URL}/user`, {
+          params: { email: decodedEmail },
+        });
+
+        console.log("User:", res.data); // 🔍 debug
+        setChattingWith(res.data);
+      } catch (err) {
+        console.error("User fetch error:", err);
+      }
     };
 
     if (decodedEmail) fetchUser();
