@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { socket } from "./socket";
 
 export default function useCall(roomId) {
@@ -6,17 +6,18 @@ export default function useCall(roomId) {
   const localStream = useRef(null);
   const pendingCandidates = useRef([]);
 
+  // ✅ FIX: state must be INSIDE hook
+  const [remoteStream, setRemoteStream] = useState(null);
+
   /* =========================
      🔹 START CALL
   ========================= */
   const startCall = async (type = "video") => {
     try {
-      // stop old stream
       if (localStream.current) {
         localStream.current.getTracks().forEach((t) => t.stop());
       }
 
-      // get media
       localStream.current = await navigator.mediaDevices.getUserMedia({
         video: type === "video",
         audio: true,
@@ -26,21 +27,20 @@ export default function useCall(roomId) {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
+      // ✅ IMPORTANT
+      peer.current.ontrack = (event) => {
+        console.log("TRACK EVENT (caller):", event);
+        setRemoteStream(event.streams[0]);
+      };
+
       peer.current.oniceconnectionstatechange = () => {
         console.log("ICE STATE (caller):", peer.current.iceConnectionState);
       };
 
-      peer.current.ontrack = (event) => {
-        console.log("TRACK EVENT (caller):", event);
-        console.log("STREAM:", event.streams[0]);
-      };
-
-      // 🔥 ADD TRACKS
       localStream.current.getTracks().forEach((track) => {
         peer.current.addTrack(track, localStream.current);
       });
 
-      // 🔥 ICE SEND
       peer.current.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("ice-candidate", {
@@ -50,13 +50,11 @@ export default function useCall(roomId) {
         }
       };
 
-      // 🔥 APPLY pending ICE
       for (let c of pendingCandidates.current) {
         await peer.current.addIceCandidate(c);
       }
       pendingCandidates.current = [];
 
-      // OFFER
       const offer = await peer.current.createOffer();
       await peer.current.setLocalDescription(offer);
 
@@ -87,13 +85,15 @@ export default function useCall(roomId) {
         peer.current = new RTCPeerConnection({
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
-        peer.current.oniceconnectionstatechange = () => {
-          console.log("ICE STATE (receiver):", peer.current.iceConnectionState);
-        };
 
+        // ✅ IMPORTANT
         peer.current.ontrack = (event) => {
           console.log("TRACK EVENT (receiver):", event);
-          console.log("STREAM:", event.streams[0]);
+          setRemoteStream(event.streams[0]);
+        };
+
+        peer.current.oniceconnectionstatechange = () => {
+          console.log("ICE STATE (receiver):", peer.current.iceConnectionState);
         };
 
         localStream.current.getTracks().forEach((track) => {
@@ -111,7 +111,6 @@ export default function useCall(roomId) {
 
         await peer.current.setRemoteDescription(offer);
 
-        // 🔥 APPLY pending ICE
         for (let c of pendingCandidates.current) {
           await peer.current.addIceCandidate(c);
         }
@@ -160,5 +159,6 @@ export default function useCall(roomId) {
     };
   }, []);
 
-  return { startCall, localStream, peer };
+  // ✅ RETURN remoteStream
+  return { startCall, localStream, peer, remoteStream };
 }

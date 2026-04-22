@@ -24,7 +24,8 @@ function MessageBox() {
   const bottomRef = useRef(null);
 
   const roomId = [myEmail, decodedEmail].sort().join("_");
-  const { startCall, localStream, peer } = useCall(roomId);
+  // const { startCall, localStream, peer } = useCall(roomId);
+  const { startCall, localStream, peer, remoteStream } = useCall(roomId);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -125,7 +126,8 @@ function MessageBox() {
       </div>
 
       {/* CALL UI */}
-      <CallUI localStream={localStream} peer={peer} />
+      {/* <CallUI localStream={localStream} peer={peer} /> */}
+      <CallUI localStream={localStream} remoteStream={remoteStream} />
 
       {/* CHAT */}
       <div className={styles.chatArea}>

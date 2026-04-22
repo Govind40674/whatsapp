@@ -1,42 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
-function CallUI({ localStream, peer }) {
+function CallUI({ localStream, remoteStream }) {
   const localVideo = useRef(null);
   const remoteVideo = useRef(null);
-  const [remoteStream, setRemoteStream] = useState(null);
 
-  // 🎥 Attach LOCAL stream
+  // 🎥 Local stream
   useEffect(() => {
     if (localStream?.current && localVideo.current) {
       localVideo.current.srcObject = localStream.current;
     }
   }, [localStream?.current]);
 
-  // 🎥 Listen for REMOTE stream
-  useEffect(() => {
-    const currentPeer = peer?.current;
-    if (!currentPeer) return;
-
-    const handleTrack = (event) => {
-      console.log("Remote stream received");
-      setRemoteStream(event.streams[0]);
-    };
-
-    currentPeer.addEventListener("track", handleTrack);
-
-    return () => {
-      currentPeer.removeEventListener("track", handleTrack);
-    };
-  }, [peer]);
-
-  // 🎥 Attach REMOTE stream to video
+  // 🎥 Remote stream
   useEffect(() => {
     if (remoteStream && remoteVideo.current) {
       remoteVideo.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
-  // 🚫 render nothing if no streams
   if (!localStream?.current && !remoteStream) return null;
 
   return (
@@ -50,11 +31,12 @@ function CallUI({ localStream, peer }) {
         background: "black",
       }}
     >
-      {/* 🔵 Remote Video */}
+      {/* 🔵 Remote */}
       <video
         ref={remoteVideo}
         autoPlay
         playsInline
+        muted
         style={{
           width: "100%",
           maxHeight: "300px",
@@ -62,7 +44,7 @@ function CallUI({ localStream, peer }) {
         }}
       />
 
-      {/* 🟢 Local Video */}
+      {/* 🟢 Local */}
       <video
         ref={localVideo}
         autoPlay
