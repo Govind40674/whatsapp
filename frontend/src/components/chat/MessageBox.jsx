@@ -25,7 +25,7 @@ function MessageBox() {
 
   const roomId = [myEmail, decodedEmail].sort().join("_");
   // const { startCall, localStream, peer } = useCall(roomId);
-  const { startCall, localStream, peer, remoteStream } = useCall(roomId);
+  const { startCall, localStream, remoteStream } = useCall(roomId);
 
   useEffect(() => {
     const fetchUser = async () => {

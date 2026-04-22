@@ -22,6 +22,8 @@ export default function useCall(roomId) {
         video: type === "video",
         audio: true,
       });
+      console.log("CALLER LOCAL STREAM:", localStream.current);
+      console.log("CALLER AUDIO TRACKS:", localStream.current.getAudioTracks());
 
       peer.current = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -81,6 +83,11 @@ export default function useCall(roomId) {
           video: true,
           audio: true,
         });
+        console.log("RECEIVER LOCAL STREAM:", localStream.current);
+        console.log(
+          "RECEIVER AUDIO TRACKS:",
+          localStream.current.getAudioTracks(),
+        );
 
         peer.current = new RTCPeerConnection({
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
