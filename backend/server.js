@@ -21,7 +21,7 @@ import upload from "./middlewares/upload.js";
 import connectDB from "./config/db_config.js";
 connectDB();
 
-import User from "./Schema/User.js";
+import User from "./Schema/user.js";
 import Message from "./Schema/message.js";
 
 const app = express();
