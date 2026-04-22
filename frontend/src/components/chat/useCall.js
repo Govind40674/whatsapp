@@ -26,6 +26,15 @@ export default function useCall(roomId) {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
+      peer.current.oniceconnectionstatechange = () => {
+        console.log("ICE STATE (caller):", peer.current.iceConnectionState);
+      };
+
+      peer.current.ontrack = (event) => {
+        console.log("TRACK EVENT (caller):", event);
+        console.log("STREAM:", event.streams[0]);
+      };
+
       // 🔥 ADD TRACKS
       localStream.current.getTracks().forEach((track) => {
         peer.current.addTrack(track, localStream.current);
@@ -52,7 +61,6 @@ export default function useCall(roomId) {
       await peer.current.setLocalDescription(offer);
 
       socket.emit("call-user", { offer, roomId });
-
     } catch (err) {
       console.error("Call start error:", err);
     }
@@ -79,6 +87,14 @@ export default function useCall(roomId) {
         peer.current = new RTCPeerConnection({
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         });
+        peer.current.oniceconnectionstatechange = () => {
+          console.log("ICE STATE (receiver):", peer.current.iceConnectionState);
+        };
+
+        peer.current.ontrack = (event) => {
+          console.log("TRACK EVENT (receiver):", event);
+          console.log("STREAM:", event.streams[0]);
+        };
 
         localStream.current.getTracks().forEach((track) => {
           peer.current.addTrack(track, localStream.current);
@@ -105,7 +121,6 @@ export default function useCall(roomId) {
         await peer.current.setLocalDescription(answer);
 
         socket.emit("answer-call", { answer, roomId });
-
       } catch (err) {
         console.error("Incoming call error:", err);
       }
