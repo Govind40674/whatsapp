@@ -6,166 +6,205 @@ export default function useCall(roomId) {
   const localStream = useRef(null);
   const pendingCandidates = useRef([]);
 
-  // ✅ FIX: state must be INSIDE hook
   const [remoteStream, setRemoteStream] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [callActive, setCallActive] = useState(false);
+
+  /* =========================
+     ✅ CREATE PEER (WITH YOUR TURN)
+  ========================= */
+  const createPeer = () => {
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.relay.metered.ca:80" },
+        {
+          urls: "turn:global.relay.metered.ca:80",
+          username: "06233b956b58f15417080948",
+          credential: "SNcVJO2SbmlqNjHz",
+        },
+        {
+          urls: "turn:global.relay.metered.ca:80?transport=tcp",
+          username: "06233b956b58f15417080948",
+          credential: "SNcVJO2SbmlqNjHz",
+        },
+        {
+          urls: "turn:global.relay.metered.ca:443",
+          username: "06233b956b58f15417080948",
+          credential: "SNcVJO2SbmlqNjHz",
+        },
+        {
+          urls: "turns:global.relay.metered.ca:443?transport=tcp",
+          username: "06233b956b58f15417080948",
+          credential: "SNcVJO2SbmlqNjHz",
+        },
+      ],
+    });
+
+    /* 🔥 TRACK (AUDIO FIX) */
+    pc.ontrack = (event) => {
+      const stream = event.streams[0];
+
+      // ensure audio enabled
+      stream.getAudioTracks().forEach((t) => (t.enabled = true));
+
+      setRemoteStream(stream);
+    };
+
+    /* 🔥 ICE SEND */
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit("ice-candidate", {
+          candidate: event.candidate,
+          roomId,
+        });
+      }
+    };
+
+    return pc;
+  };
 
   /* =========================
      🔹 START CALL
   ========================= */
   const startCall = async (type = "video") => {
-    try {
-      if (localStream.current) {
-        localStream.current.getTracks().forEach((t) => t.stop());
-      }
+    localStream.current = await navigator.mediaDevices.getUserMedia({
+      video: type === "video",
+      audio: true,
+    });
 
-      localStream.current = await navigator.mediaDevices.getUserMedia({
-        video: type === "video",
-        audio: true,
-      });
-      console.log("CALLER LOCAL STREAM:", localStream.current);
-      console.log("CALLER AUDIO TRACKS:", localStream.current.getAudioTracks());
+    peer.current = createPeer();
 
-      peer.current = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-      });
+    localStream.current.getTracks().forEach((track) => {
+      peer.current.addTrack(track, localStream.current);
+    });
 
-      // ✅ IMPORTANT
-      peer.current.ontrack = (event) => {
-        console.log("TRACK EVENT (caller):", event);
-        setRemoteStream(event.streams[0]);
-      };
+    const offer = await peer.current.createOffer();
+    await peer.current.setLocalDescription(offer);
 
-      peer.current.oniceconnectionstatechange = () => {
-        console.log("ICE STATE (caller):", peer.current.iceConnectionState);
-      };
+    socket.emit("call-user", { offer, roomId });
 
-      localStream.current.getTracks().forEach((track) => {
-        peer.current.addTrack(track, localStream.current);
-      });
-
-      peer.current.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit("ice-candidate", {
-            candidate: event.candidate,
-            roomId,
-          });
-        }
-      };
-
-      for (let c of pendingCandidates.current) {
-        await peer.current.addIceCandidate(c);
-      }
-      pendingCandidates.current = [];
-
-      const offer = await peer.current.createOffer();
-      await peer.current.setLocalDescription(offer);
-
-      socket.emit("call-user", { offer, roomId });
-    } catch (err) {
-      console.error("Call start error:", err);
-    }
+    setCallActive(true);
   };
 
   /* =========================
-     🔹 RECEIVE CALL
+     🔹 ACCEPT CALL
   ========================= */
-  useEffect(() => {
-    const handleIncoming = async ({ offer }) => {
-      const accept = window.confirm("Incoming Call 📞");
-      if (!accept) return;
+  const acceptCall = async () => {
+    const offer = incomingCall;
 
-      try {
-        if (localStream.current) {
-          localStream.current.getTracks().forEach((t) => t.stop());
-        }
+    localStream.current = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
 
-        localStream.current = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        console.log("RECEIVER LOCAL STREAM:", localStream.current);
-        console.log(
-          "RECEIVER AUDIO TRACKS:",
-          localStream.current.getAudioTracks(),
-        );
+    peer.current = createPeer();
 
-        peer.current = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-        });
+    localStream.current.getTracks().forEach((track) => {
+      peer.current.addTrack(track, localStream.current);
+    });
 
-        // ✅ IMPORTANT
-        peer.current.ontrack = (event) => {
-          console.log("TRACK EVENT (receiver):", event);
-          setRemoteStream(event.streams[0]);
-        };
+    await peer.current.setRemoteDescription(offer);
 
-        peer.current.oniceconnectionstatechange = () => {
-          console.log("ICE STATE (receiver):", peer.current.iceConnectionState);
-        };
+    // ✅ APPLY pending ICE
+    for (let c of pendingCandidates.current) {
+      await peer.current.addIceCandidate(c);
+    }
+    pendingCandidates.current = [];
 
-        localStream.current.getTracks().forEach((track) => {
-          peer.current.addTrack(track, localStream.current);
-        });
+    const answer = await peer.current.createAnswer();
+    await peer.current.setLocalDescription(answer);
 
-        peer.current.onicecandidate = (event) => {
-          if (event.candidate) {
-            socket.emit("ice-candidate", {
-              candidate: event.candidate,
-              roomId,
-            });
-          }
-        };
+    socket.emit("answer-call", { answer, roomId });
 
-        await peer.current.setRemoteDescription(offer);
-
-        for (let c of pendingCandidates.current) {
-          await peer.current.addIceCandidate(c);
-        }
-        pendingCandidates.current = [];
-
-        const answer = await peer.current.createAnswer();
-        await peer.current.setLocalDescription(answer);
-
-        socket.emit("answer-call", { answer, roomId });
-      } catch (err) {
-        console.error("Incoming call error:", err);
-      }
-    };
-
-    socket.on("incoming-call", handleIncoming);
-    return () => socket.off("incoming-call", handleIncoming);
-  }, [roomId]);
+    setIncomingCall(null);
+    setCallActive(true);
+  };
 
   /* =========================
-     🔹 FINAL CONNECTION
+     🔹 END CALL
+  ========================= */
+  const endCall = () => {
+    localStream.current?.getTracks().forEach((t) => t.stop());
+
+    if (peer.current) {
+      peer.current.close();
+      peer.current = null;
+    }
+
+    setRemoteStream(null);
+    setCallActive(false);
+
+    socket.emit("end-call", { roomId });
+  };
+
+  /* =========================
+     🔹 SWITCH AUDIO / VIDEO
+  ========================= */
+  const switchMedia = async (type) => {
+    if (!peer.current) return;
+
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: type === "video",
+      audio: true,
+    });
+
+    const videoTrack = newStream.getVideoTracks()[0];
+
+    const sender = peer.current
+      .getSenders()
+      .find((s) => s.track?.kind === "video");
+
+    if (sender && videoTrack) {
+      sender.replaceTrack(videoTrack);
+    }
+
+    localStream.current = newStream;
+  };
+
+  /* =========================
+     🔹 SOCKET EVENTS
   ========================= */
   useEffect(() => {
-    const handleAccepted = async ({ answer }) => {
-      if (!peer.current) return;
-      await peer.current.setRemoteDescription(answer);
-    };
+    socket.on("incoming-call", ({ offer }) => {
+      setIncomingCall(offer);
+    });
 
-    const handleICE = async ({ candidate }) => {
+    socket.on("call-accepted", async ({ answer }) => {
+      await peer.current.setRemoteDescription(answer);
+    });
+
+    socket.on("ice-candidate", async ({ candidate }) => {
       if (peer.current) {
         try {
           await peer.current.addIceCandidate(candidate);
-        } catch (err) {
-          console.error("ICE error:", err);
+        } catch {
+          pendingCandidates.current.push(candidate);
         }
       } else {
         pendingCandidates.current.push(candidate);
       }
-    };
+    });
 
-    socket.on("call-accepted", handleAccepted);
-    socket.on("ice-candidate", handleICE);
+    socket.on("end-call", () => {
+      endCall();
+    });
 
     return () => {
-      socket.off("call-accepted", handleAccepted);
-      socket.off("ice-candidate", handleICE);
+      socket.off("incoming-call");
+      socket.off("call-accepted");
+      socket.off("ice-candidate");
+      socket.off("end-call");
     };
   }, []);
 
-  // ✅ RETURN remoteStream
-  return { startCall, localStream, peer, remoteStream };
+  return {
+    startCall,
+    acceptCall,
+    endCall,
+    switchMedia,
+    localStream,
+    remoteStream,
+    incomingCall,
+    callActive,
+  };
 }

@@ -5,16 +5,12 @@ import { socket } from "./socket";
 import axios from "axios";
 import useCall from "./useCall";
 import CallUI from "./CallUI";
-// import { FaVideo } from "react-icons/fa";
 import { IoVideocam, IoCall } from "react-icons/io5";
+import { MdCallEnd } from "react-icons/md";
 
 function MessageBox() {
   const { email } = useParams();
-
-  // ✅ FIX: decode FIRST
   const decodedEmail = decodeURIComponent(email || "");
-
-  // ✅ THEN use hook
 
   const [chattingWith, setChattingWith] = useState({});
   const [messages, setMessages] = useState([]);
@@ -24,26 +20,39 @@ function MessageBox() {
   const bottomRef = useRef(null);
 
   const roomId = [myEmail, decodedEmail].sort().join("_");
-  // const { startCall, localStream, peer } = useCall(roomId);
-  const { startCall, localStream, remoteStream } = useCall(roomId);
 
+  const {
+    startCall,
+    acceptCall,
+    endCall,
+    switchMedia,
+    localStream,
+    remoteStream,
+    incomingCall,
+    callActive,
+  } = useCall(roomId);
+
+  /* =========================
+     🔹 FETCH USER
+  ========================= */
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_URL}/user`, {
           params: { email: decodedEmail },
         });
-
-        console.log("User:", res.data); // 🔍 debug
         setChattingWith(res.data);
       } catch (err) {
-        console.error("User fetch error:", err);
+        console.error(err);
       }
     };
 
     if (decodedEmail) fetchUser();
   }, [decodedEmail]);
 
+  /* =========================
+     🔹 SOCKET ROOM
+  ========================= */
   useEffect(() => {
     if (!myEmail || !decodedEmail) return;
 
@@ -51,6 +60,9 @@ function MessageBox() {
     return () => socket.emit("leaveRoom", roomId);
   }, [roomId, myEmail, decodedEmail]);
 
+  /* =========================
+     🔹 FETCH MESSAGES
+  ========================= */
   useEffect(() => {
     const fetchMessages = async () => {
       const res = await fetch(`${import.meta.env.VITE_URL}/messages`, {
@@ -69,6 +81,9 @@ function MessageBox() {
     fetchMessages();
   }, [decodedEmail, myEmail]);
 
+  /* =========================
+     🔹 RECEIVE MESSAGE
+  ========================= */
   useEffect(() => {
     socket.on("receiveMessage", (msg) => {
       setMessages((prev) => [...prev, msg]);
@@ -96,15 +111,11 @@ function MessageBox() {
 
   return (
     <div className={styles.container}>
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           {chattingWith.image ? (
-            <img
-              src={chattingWith.image}
-              alt=""
-              className={styles.profilePic}
-            />
+            <img src={chattingWith.image} alt="" className={styles.profilePic} />
           ) : (
             <div className={styles.defaultAvatar}>
               {chattingWith.name?.[0]?.toUpperCase()}
@@ -112,24 +123,68 @@ function MessageBox() {
           )}
         </div>
 
-        <div className={styles.headerCenter}>{chattingWith.name || "User"}</div>
+        <div className={styles.headerCenter}>
+          {chattingWith.name || "User"}
+        </div>
 
         <div className={styles.headerRight}>
-          <button className={styles.callBtn} onClick={() => startCall("audio")}>
-            <IoCall />
-          </button>
+          {!callActive && (
+            <>
+              <button onClick={() => startCall("audio")}>
+                <IoCall />
+              </button>
+              <button onClick={() => startCall("video")}>
+                <IoVideocam />
+              </button>
+            </>
+          )}
 
-          <button className={styles.callBtn} onClick={() => startCall("video")}>
-            <IoVideocam />
-          </button>
+          {callActive && (
+            <>
+              <button onClick={() => switchMedia("audio")}>
+                Audio
+              </button>
+              <button onClick={() => switchMedia("video")}>
+                Video
+              </button>
+              <button onClick={endCall}>
+                <MdCallEnd color="red" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* CALL UI */}
-      {/* <CallUI localStream={localStream} peer={peer} /> */}
-      <CallUI localStream={localStream} remoteStream={remoteStream} />
+      {/* ================= INCOMING CALL UI ================= */}
+      {incomingCall && !callActive && (
+        <div
+          style={{
+            position: "absolute",
+            top: "40%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            background: "#222",
+            padding: "20px",
+            borderRadius: "10px",
+            color: "white",
+            zIndex: 999,
+          }}
+        >
+          <p>Incoming Call...</p>
+          <button onClick={acceptCall}>Accept</button>
+          <button onClick={endCall}>Reject</button>
+        </div>
+      )}
 
-      {/* CHAT */}
+      {/* ================= CALL UI ================= */}
+      {callActive && (
+        <CallUI
+          localStream={localStream}
+          remoteStream={remoteStream}
+        />
+      )}
+
+      {/* ================= CHAT ================= */}
       <div className={styles.chatArea}>
         {messages.map((msg, i) => {
           const isMe = msg.sender === myEmail;
@@ -143,7 +198,7 @@ function MessageBox() {
         <div ref={bottomRef}></div>
       </div>
 
-      {/* INPUT */}
+      {/* ================= INPUT ================= */}
       <div className={styles.inputArea}>
         <input
           value={input}
