@@ -6,6 +6,7 @@ export default function useCall(roomId) {
   const localStream = useRef(null);
   const pendingCandidates = useRef([]);
   const isEnding = useRef(false);
+  const isReconnecting = useRef(false); // 🔥 NEW
 
   const [, forceUpdate] = useState(0);
 
@@ -37,7 +38,6 @@ export default function useCall(roomId) {
       const stream =
         event.streams?.[0] || new MediaStream([event.track]);
 
-      console.log("REMOTE STREAM:", stream);
       setRemoteStream(stream);
     };
 
@@ -78,9 +78,7 @@ export default function useCall(roomId) {
 
       setCallActive(true);
 
-      // 🔥 SAVE CALL STATE
       localStorage.setItem("activeCall", roomId);
-
     } catch (err) {
       console.error("Start error:", err);
     }
@@ -119,9 +117,7 @@ export default function useCall(roomId) {
       setIncomingCall(null);
       setCallActive(true);
 
-      // 🔥 SAVE CALL STATE
       localStorage.setItem("activeCall", roomId);
-
     } catch (err) {
       console.error("Accept error:", err);
     }
@@ -148,7 +144,6 @@ export default function useCall(roomId) {
     setIncomingCall(null);
     pendingCandidates.current = [];
 
-    // 🔥 REMOVE CALL STATE
     localStorage.removeItem("activeCall");
   };
 
@@ -188,63 +183,66 @@ export default function useCall(roomId) {
           (s) => s.track && s.track.kind === track.kind
         );
 
-        if (sender) {
-          sender.replaceTrack(track);
-        }
+        if (sender) sender.replaceTrack(track);
       });
 
       localStream.current?.getTracks().forEach((t) => t.stop());
       localStream.current = newStream;
 
       forceUpdate((prev) => prev + 1);
-
     } catch (err) {
       console.error("Switch error:", err);
     }
   };
 
   /* =========================
-     🔹 AUTO RECONNECT AFTER REFRESH
+     🔹 AUTO RECONNECT
   ========================= */
   useEffect(() => {
     const savedRoom = localStorage.getItem("activeCall");
 
     if (savedRoom === roomId) {
-      console.log("🔁 Reconnecting call...");
+      console.log("🔁 Reconnecting...");
 
+      isReconnecting.current = true; // 🔥 IMPORTANT
       socket.emit("rejoin-call", { roomId });
     }
   }, [roomId]);
 
   /* =========================
-     🔹 HANDLE RECONNECT EVENTS
+     🔹 HANDLE RECONNECT
   ========================= */
   useEffect(() => {
     socket.on("user-reconnected", async () => {
-      console.log("🔄 Other user reconnected → restarting call");
+      console.log("🔄 Restarting call silently");
 
+      isReconnecting.current = true; // 🔥 IMPORTANT
       await startCall("video");
     });
 
-    return () => {
-      socket.off("user-reconnected");
-    };
+    return () => socket.off("user-reconnected");
   }, []);
 
   /* =========================
      🔹 SOCKET EVENTS
   ========================= */
   useEffect(() => {
-    socket.on("incoming-call", (data) => {
+    socket.on("incoming-call", async (data) => {
       if (!data?.offer) return;
 
-      setIncomingCall(data.offer);
+      // 🔥 RECONNECT CASE (NO UI)
+      if (isReconnecting.current) {
+        console.log("⚡ Auto-accept reconnect");
 
-      // 🔥 AUTO ACCEPT IF RECONNECT
-      const savedRoom = localStorage.getItem("activeCall");
-      if (savedRoom === roomId) {
-        acceptCall();
+        setIncomingCall(data.offer);
+        await acceptCall();
+
+        isReconnecting.current = false;
+        return;
       }
+
+      // 🟢 NORMAL CALL
+      setIncomingCall(data.offer);
     });
 
     socket.on("call-accepted", async (data) => {
