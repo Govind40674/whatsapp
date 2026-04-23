@@ -1,30 +1,27 @@
-/* ================= CONTAINER ================= */
+/* CONTAINER */
 .container {
-  height: 100dvh; /* 🔥 mobile safe height */
-  background: #efeae2;
+  height: 100dvh; /* 🔥 KEY FIX */
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
   overflow: hidden;
-  font-family: Arial, sans-serif;
 }
 
-/* ================= HEADER ================= */
+/* HEADER (FIXED) */
 .header {
-  position: fixed;
+  position: sticky;
   top: 0;
-  width: 100%;
+  z-index: 10;
   height: 60px;
-  background: #075e54;
-  color: white;
+  background: #1e293b;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 10px;
-  z-index: 1000;
+  color: white;
 }
 
-.headerLeft {
-  display: flex;
-  align-items: center;
-}
-
+/* PROFILE */
 .profilePic {
   width: 40px;
   height: 40px;
@@ -34,181 +31,120 @@
 .defaultAvatar {
   width: 40px;
   height: 40px;
+  background: #334155;
   border-radius: 50%;
-  background: #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
 }
 
-.headerCenter {
-  flex: 1;
-  margin-left: 10px;
-  font-weight: bold;
-}
-
-.headerRight button {
-  margin-left: 10px;
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-/* ================= CHAT AREA ================= */
+/* CHAT AREA */
 .chatArea {
-  position: absolute;
-  top: 60px;   /* header height */
-  bottom: 70px; /* input height */
-  width: 100%;
+  flex: 1;
   overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
+  padding: 70px 10px 80px; /* 🔥 space for header + input */
 }
 
-/* ================= MESSAGES ================= */
+/* MESSAGES */
 .sent {
-  align-self: flex-end;
-  background: #dcf8c6;
+  background: #22c55e;
   padding: 8px 12px;
-  border-radius: 8px;
-  margin: 4px 0;
+  margin: 5px 0;
+  border-radius: 10px;
+  align-self: flex-end;
   max-width: 70%;
-  word-wrap: break-word;
 }
 
 .received {
-  align-self: flex-start;
-  background: white;
+  background: #334155;
   padding: 8px 12px;
-  border-radius: 8px;
-  margin: 4px 0;
+  margin: 5px 0;
+  border-radius: 10px;
   max-width: 70%;
-  word-wrap: break-word;
 }
 
-/* ================= INPUT AREA ================= */
+/* INPUT (WHATSAPP STYLE FIXED) */
 .inputArea {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  width: 100%;
-  height: 70px;
-  background: #f0f0f0;
+  z-index: 10;
+
   display: flex;
-  align-items: center;
-  padding: 10px;
   gap: 10px;
-  border-top: 1px solid #ccc;
-  z-index: 1000;
+  padding: 10px;
+  background: #1e293b;
+
+  /* 🔥 MOBILE FIX */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* INPUT FIELD */
 .inputArea input {
   flex: 1;
   padding: 10px;
   border-radius: 20px;
   border: none;
   outline: none;
-  font-size: 16px; /* 🔥 prevents zoom on mobile */
 }
 
+/* SEND BUTTON */
 .sendBtn {
-  background: #075e54;
-  color: white;
+  background: #22c55e;
   border: none;
-  padding: 10px 14px;
+  color: white;
+  padding: 10px 15px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 16px;
 }
 
-/* ================= INCOMING CALL UI ================= */
+/* CALL POPUP */
 .callOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0,0,0,0.8);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000;
+  z-index: 20;
 }
 
 .callPopup {
-  background: #1f2c34;
-  padding: 25px;
-  border-radius: 12px;
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 10px;
   text-align: center;
   color: white;
-  width: 280px;
-}
-
-.callPopup h2 {
-  margin-bottom: 10px;
 }
 
 .callActions {
-  margin-top: 20px;
+  margin-top: 15px;
   display: flex;
   justify-content: space-around;
 }
 
 .acceptBtn {
-  background: #25d366;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 50px;
+  background: green;
   color: white;
-  cursor: pointer;
+  padding: 10px;
+  border-radius: 10px;
 }
 
 .rejectBtn {
   background: red;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 50px;
   color: white;
-  cursor: pointer;
-}
-
-/* ================= SCROLLBAR (OPTIONAL) ================= */
-.chatArea::-webkit-scrollbar {
-  width: 5px;
-}
-
-.chatArea::-webkit-scrollbar-thumb {
-  background: #bbb;
+  padding: 10px;
   border-radius: 10px;
 }
 
-/* ================= RESPONSIVE ================= */
+/* 📱 MOBILE FIX */
 @media (max-width: 768px) {
-  .sent,
-  .received {
-    max-width: 85%;
-  }
-
-  .headerCenter {
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .header {
-    height: 55px;
-  }
-
   .chatArea {
-    top: 55px;
-    bottom: 65px;
+    padding-bottom: 90px;
   }
 
   .inputArea {
-    height: 65px;
-  }
-
-  .inputArea input {
-    font-size: 16px;
+    position: fixed; /* 🔥 SUPER IMPORTANT */
+    bottom: 0;
+    width: 100%;
   }
 }
