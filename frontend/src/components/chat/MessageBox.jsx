@@ -94,7 +94,6 @@ function MessageBox() {
 
   return (
     <div className={styles.container}>
-      
       {/* HEADER */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -107,21 +106,25 @@ function MessageBox() {
           )}
         </div>
 
-        <div className={styles.headerCenter}>
-          {chattingWith.name || "User"}
-        </div>
+        <div className={styles.headerCenter}>{chattingWith.name || "User"}</div>
 
         <div className={styles.headerRight}>
           {!callActive ? (
             <>
-              <button onClick={() => startCall("audio")}><IoCall /></button>
-              <button onClick={() => startCall("video")}><IoVideocam /></button>
+              <button onClick={() => startCall("audio")}>
+                <IoCall />
+              </button>
+              <button onClick={() => startCall("video")}>
+                <IoVideocam />
+              </button>
             </>
           ) : (
             <>
               <button onClick={() => switchMedia("audio")}>Audio</button>
               <button onClick={() => switchMedia("video")}>Video</button>
-              <button onClick={endCall}><MdCallEnd color="red" /></button>
+              <button onClick={endCall}>
+                <MdCallEnd color="red" />
+              </button>
             </>
           )}
         </div>
@@ -130,11 +133,34 @@ function MessageBox() {
       {/* INCOMING CALL */}
       {incomingCall && !callActive && (
         <div className={styles.callOverlay}>
-          <div className={styles.callPopup}>
-            <h2>{chattingWith.name || "Incoming Call"}</h2>
-            <div className={styles.callActions}>
-              <button onClick={endCall} className={styles.rejectBtn}>Reject</button>
-              <button onClick={acceptCall} className={styles.acceptBtn}>Accept</button>
+          <div className={styles.callCard}>
+            {/* Profile */}
+            <div className={styles.avatarWrapper}>
+              {chattingWith.image ? (
+                <img src={chattingWith.image} className={styles.avatar} />
+              ) : (
+                <div className={styles.avatarFallback}>
+                  {chattingWith.name?.[0]?.toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {/* Name */}
+            <h2 className={styles.callerName}>
+              {chattingWith.name || "Incoming Call"}
+            </h2>
+
+            <p className={styles.callText}>Incoming call...</p>
+
+            {/* Buttons */}
+            <div className={styles.callButtons}>
+              <button onClick={endCall} className={styles.rejectBtn}>
+                ❌
+              </button>
+
+              <button onClick={acceptCall} className={styles.acceptBtn}>
+                📞
+              </button>
             </div>
           </div>
         </div>
@@ -171,7 +197,9 @@ function MessageBox() {
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Type a message..."
         />
-        <button onClick={sendMessage} className={styles.sendBtn}>➤</button>
+        <button onClick={sendMessage} className={styles.sendBtn}>
+          ➤
+        </button>
       </div>
     </div>
   );

@@ -249,3 +249,109 @@
     min-width: 40px;
   }
 }
+/* FULL SCREEN OVERLAY */
+.callOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+/* CARD */
+.callCard {
+  text-align: center;
+  color: white;
+  animation: fadeIn 0.3s ease;
+}
+
+/* AVATAR */
+.avatarWrapper {
+  margin-bottom: 15px;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+}
+
+.avatarFallback {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #444;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+}
+
+/* TEXT */
+.callerName {
+  margin: 10px 0 5px;
+  font-size: 22px;
+}
+
+.callText {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* BUTTONS */
+.callButtons {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+}
+
+.acceptBtn,
+.rejectBtn {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* ACCEPT */
+.acceptBtn {
+  background: #22c55e;
+  color: white;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+
+.acceptBtn:hover {
+  transform: scale(1.1);
+}
+
+/* REJECT */
+.rejectBtn {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+.rejectBtn:hover {
+  transform: scale(1.1);
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
