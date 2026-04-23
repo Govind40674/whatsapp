@@ -11,8 +11,6 @@ import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-
-
 import upload from "./middlewares/upload.js";
 
 // 🔹 DB Connection
@@ -34,11 +32,7 @@ const server = http.createServer(app);
 // });
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5174",
-      "https://looptalk-gfr8.onrender.com",
-      
-    ],
+    origin: ["http://localhost:5174", "https://looptalk-gfr8.onrender.com"],
     credentials: true,
   },
   allowEIO3: true,
@@ -48,16 +42,16 @@ const io = new Server(server, {
 // 🔹 Middleware
 // app.use(cors({ origin: true, credentials: true }));
 
-
-
-app.use(cors({
-  origin: [
-    "http://localhost:5174",
-    "https://looptalk-gfr8.onrender.com",
-    "http://192.168.29.203:5174",// <-- replace this
-  ],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5174",
+      "https://looptalk-gfr8.onrender.com",
+      "http://192.168.29.203:5174", // <-- replace this
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -104,6 +98,9 @@ io.on("connection", (socket) => {
   socket.on("ice-candidate", ({ candidate, roomId }) => {
     // console.log("❄️ ICE candidate sent");
     socket.to(roomId).emit("ice-candidate", { candidate });
+  });
+  socket.on("rejoin-call", ({ roomId }) => {
+    socket.to(roomId).emit("user-reconnected");
   });
 
   // 🔴 END CALL (IMPORTANT)
@@ -567,7 +564,7 @@ app.put("/profile/update", (req, res) => {
       const updatedUser = await User.findOneAndUpdate(
         { email },
         { $set: updateData },
-        { returnDocument: "after" }
+        { returnDocument: "after" },
       );
 
       await User.updateMany(
@@ -580,11 +577,10 @@ app.put("/profile/update", (req, res) => {
         },
         {
           arrayFilters: [{ "elem.email": email }],
-        }
+        },
       );
 
       res.json(updatedUser);
-
     } catch (err) {
       console.error("ROUTE ERROR:", err.message);
       res.status(500).json({ message: err.message });
