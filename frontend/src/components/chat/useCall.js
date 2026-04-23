@@ -6,56 +6,25 @@ export default function useCall(roomId) {
   const localStream = useRef(null);
   const pendingCandidates = useRef([]);
 
-  const [, forceUpdate] = useState(0);
-
   const [remoteStream, setRemoteStream] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null);
   const [callActive, setCallActive] = useState(false);
-
-  /* =========================
-     CLEANUP
-  ========================= */
-  const cleanUp = () => {
-    localStream.current?.getTracks().forEach((t) => t.stop());
-    localStream.current = null;
-
-    peer.current?.close();
-    peer.current = null;
-
-    setRemoteStream(null);
-    setIncomingCall(null);
-    setCallActive(false);
-
-    pendingCandidates.current = [];
-  };
 
   /* =========================
      CREATE PEER
   ========================= */
   const createPeer = () => {
     const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.relay.metered.ca:80" },
-        {
-          urls: "turn:global.relay.metered.ca:80",
-          username: "06233b956b58f15417080948",
-          credential: "SNcVJO2SbmlqNjHz",
-        },
-      ],
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
 
-    pc.ontrack = (event) => {
-      const stream =
-        event.streams?.[0] || new MediaStream([event.track]);
-      setRemoteStream(stream);
+    pc.ontrack = (e) => {
+      setRemoteStream(e.streams[0]);
     };
 
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("ice-candidate", {
-          candidate: event.candidate,
-          roomId,
-        });
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("ice-candidate", { candidate: e.candidate, roomId });
       }
     };
 
@@ -66,7 +35,7 @@ export default function useCall(roomId) {
      START CALL
   ========================= */
   const startCall = async (type = "video") => {
-    cleanUp();
+    await cleanUp();
 
     localStream.current = await navigator.mediaDevices.getUserMedia({
       video: type === "video",
@@ -93,8 +62,6 @@ export default function useCall(roomId) {
   const acceptCall = async (data) => {
     const { offer, type } = data;
 
-    cleanUp();
-
     localStream.current = await navigator.mediaDevices.getUserMedia({
       video: type === "video",
       audio: true,
@@ -108,7 +75,7 @@ export default function useCall(roomId) {
 
     await peer.current.setRemoteDescription(offer);
 
-    // 🔥 APPLY PENDING ICE
+    // 🔥 IMPORTANT FIX
     for (let c of pendingCandidates.current) {
       await peer.current.addIceCandidate(c);
     }
@@ -124,11 +91,9 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     SWITCH MEDIA
+     SWITCH MEDIA (FIXED)
   ========================= */
   const switchMedia = async (type) => {
-    if (!peer.current) return;
-
     const newStream = await navigator.mediaDevices.getUserMedia({
       video: type === "video",
       audio: true,
@@ -137,20 +102,19 @@ export default function useCall(roomId) {
     const senders = peer.current.getSenders();
 
     newStream.getTracks().forEach((track) => {
-      const sender = senders.find(
-        (s) => s.track && s.track.kind === track.kind
-      );
+      const sender = senders.find((s) => s.track?.kind === track.kind);
 
-      if (sender) sender.replaceTrack(track);
-      else peer.current.addTrack(track, newStream);
+      if (sender) {
+        sender.replaceTrack(track);
+      } else {
+        peer.current.addTrack(track, newStream);
+      }
     });
 
     localStream.current?.getTracks().forEach((t) => t.stop());
     localStream.current = newStream;
 
-    forceUpdate((p) => p + 1);
-
-    // 🔥 RENEGOTIATION
+    // 🔥 renegotiation fix
     const offer = await peer.current.createOffer();
     await peer.current.setLocalDescription(offer);
 
@@ -158,11 +122,28 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     END CALL
+     CLEANUP (VERY IMPORTANT)
   ========================= */
+  const cleanUp = async () => {
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((t) => t.stop());
+      localStream.current = null;
+    }
+
+    if (peer.current) {
+      peer.current.close();
+      peer.current = null;
+    }
+
+    setRemoteStream(null);
+    setCallActive(false);
+    setIncomingCall(null);
+    pendingCandidates.current = [];
+  };
+
   const endCall = () => {
-    socket.emit("end-call", { roomId });
     cleanUp();
+    socket.emit("end-call", { roomId });
   };
 
   /* =========================
@@ -207,21 +188,6 @@ export default function useCall(roomId) {
       socket.off("renegotiate");
       socket.off("renegotiate-answer");
       socket.off("end-call");
-    };
-  }, []);
-
-  /* =========================
-     🔥 HANDLE REFRESH
-  ========================= */
-  useEffect(() => {
-    const handleUnload = () => {
-      socket.emit("end-call", { roomId });
-    };
-
-    window.addEventListener("beforeunload", handleUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleUnload);
     };
   }, []);
 
