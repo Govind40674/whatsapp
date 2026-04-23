@@ -6,12 +6,11 @@ export default function useCall(roomId) {
   const localStream = useRef(null);
   const pendingCandidates = useRef([]);
   const isEnding = useRef(false);
-  const isReconnecting = useRef(false); // 🔥 NEW
 
   const [, forceUpdate] = useState(0);
 
   const [remoteStream, setRemoteStream] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null); // store OFFER
   const [callActive, setCallActive] = useState(false);
 
   /* =========================
@@ -23,11 +22,6 @@ export default function useCall(roomId) {
         { urls: "stun:stun.relay.metered.ca:80" },
         {
           urls: "turn:global.relay.metered.ca:80",
-          username: "06233b956b58f15417080948",
-          credential: "SNcVJO2SbmlqNjHz",
-        },
-        {
-          urls: "turn:global.relay.metered.ca:443",
           username: "06233b956b58f15417080948",
           credential: "SNcVJO2SbmlqNjHz",
         },
@@ -77,7 +71,6 @@ export default function useCall(roomId) {
       socket.emit("call-user", { offer, roomId });
 
       setCallActive(true);
-
       localStorage.setItem("activeCall", roomId);
     } catch (err) {
       console.error("Start error:", err);
@@ -85,11 +78,11 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔹 ACCEPT CALL
+     🔹 ACCEPT CALL (FIXED)
   ========================= */
-  const acceptCall = async () => {
+  const acceptCall = async (offer) => {
     try {
-      if (!incomingCall) return;
+      if (!offer) return;
 
       localStream.current = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -102,7 +95,7 @@ export default function useCall(roomId) {
         peer.current.addTrack(track, localStream.current);
       });
 
-      await peer.current.setRemoteDescription(incomingCall);
+      await peer.current.setRemoteDescription(offer);
 
       for (let c of pendingCandidates.current) {
         await peer.current.addIceCandidate(c);
@@ -127,17 +120,11 @@ export default function useCall(roomId) {
      🔹 CLEANUP
   ========================= */
   const cleanUp = () => {
-    if (localStream.current) {
-      localStream.current.getTracks().forEach((t) => t.stop());
-      localStream.current = null;
-    }
+    localStream.current?.getTracks().forEach((t) => t.stop());
+    localStream.current = null;
 
-    if (peer.current) {
-      peer.current.ontrack = null;
-      peer.current.onicecandidate = null;
-      peer.current.close();
-      peer.current = null;
-    }
+    peer.current?.close();
+    peer.current = null;
 
     setRemoteStream(null);
     setCallActive(false);
@@ -145,6 +132,7 @@ export default function useCall(roomId) {
     pendingCandidates.current = [];
 
     localStorage.removeItem("activeCall");
+    localStorage.removeItem("reconnecting");
   };
 
   /* =========================
@@ -157,15 +145,13 @@ export default function useCall(roomId) {
 
     cleanUp();
 
-    setTimeout(() => {
-      isEnding.current = false;
-    }, 500);
+    setTimeout(() => (isEnding.current = false), 500);
 
     socket.emit("end-call", { roomId });
   };
 
   /* =========================
-     🔹 SWITCH MEDIA
+     🔹 SWITCH MEDIA (kept)
   ========================= */
   const switchMedia = async (type) => {
     if (!peer.current) return;
@@ -202,26 +188,10 @@ export default function useCall(roomId) {
     const savedRoom = localStorage.getItem("activeCall");
 
     if (savedRoom === roomId) {
-      console.log("🔁 Reconnecting...");
-
-      isReconnecting.current = true; // 🔥 IMPORTANT
+      localStorage.setItem("reconnecting", "true");
       socket.emit("rejoin-call", { roomId });
     }
   }, [roomId]);
-
-  /* =========================
-     🔹 HANDLE RECONNECT
-  ========================= */
-  useEffect(() => {
-    socket.on("user-reconnected", async () => {
-      console.log("🔄 Restarting call silently");
-
-      isReconnecting.current = true; // 🔥 IMPORTANT
-      await startCall("video");
-    });
-
-    return () => socket.off("user-reconnected");
-  }, []);
 
   /* =========================
      🔹 SOCKET EVENTS
@@ -230,18 +200,16 @@ export default function useCall(roomId) {
     socket.on("incoming-call", async (data) => {
       if (!data?.offer) return;
 
-      // 🔥 RECONNECT CASE (NO UI)
-      if (isReconnecting.current) {
-        console.log("⚡ Auto-accept reconnect");
+      const isReconnect = localStorage.getItem("reconnecting");
 
-        setIncomingCall(data.offer);
-        await acceptCall();
+      if (isReconnect === "true") {
+        console.log("⚡ Auto reconnect accept");
 
-        isReconnecting.current = false;
+        await acceptCall(data.offer);
+        localStorage.removeItem("reconnecting");
         return;
       }
 
-      // 🟢 NORMAL CALL
       setIncomingCall(data.offer);
     });
 
@@ -259,16 +227,14 @@ export default function useCall(roomId) {
     socket.on("ice-candidate", async (data) => {
       if (!data?.candidate) return;
 
-      if (peer.current && peer.current.remoteDescription) {
+      if (peer.current?.remoteDescription) {
         await peer.current.addIceCandidate(data.candidate);
       } else {
         pendingCandidates.current.push(data.candidate);
       }
     });
 
-    socket.on("end-call", () => {
-      cleanUp();
-    });
+    socket.on("end-call", cleanUp);
 
     return () => {
       socket.off("incoming-call");

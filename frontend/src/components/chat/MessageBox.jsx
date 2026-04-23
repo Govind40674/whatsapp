@@ -158,7 +158,13 @@ function MessageBox() {
                 ❌
               </button>
 
-              <button onClick={acceptCall} className={styles.acceptBtn}>
+              {/* <button onClick={acceptCall} className={styles.acceptBtn}>
+                📞
+              </button> */}
+              <button
+                onClick={() => acceptCall(incomingCall)}
+                className={styles.acceptBtn}
+              >
                 📞
               </button>
             </div>

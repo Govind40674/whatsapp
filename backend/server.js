@@ -99,10 +99,12 @@ io.on("connection", (socket) => {
     // console.log("❄️ ICE candidate sent");
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
-  socket.on("rejoin-call", ({ roomId }) => {
-    socket.to(roomId).emit("user-reconnected");
-  });
+socket.on("rejoin-call", ({ roomId }) => {
+  socket.join(roomId);
 
+  // notify other user
+  socket.to(roomId).emit("user-reconnected");
+});
   // 🔴 END CALL (IMPORTANT)
   socket.on("end-call", ({ roomId }) => {
     console.log("📴 Call ended in room:", roomId);
