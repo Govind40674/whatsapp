@@ -1,36 +1,32 @@
 import React, { useEffect, useRef } from "react";
+import { MdCallEnd } from "react-icons/md";
+import { IoVideocam, IoCall } from "react-icons/io5";
 
-function CallUI({ localStream, remoteStream }) {
+function CallUI({
+  localStream,
+  remoteStream,
+  endCall,
+  switchMedia,
+}) {
   const localVideo = useRef(null);
   const remoteVideo = useRef(null);
 
-  /* ================= LOCAL ================= */
+  /* LOCAL */
   useEffect(() => {
     if (localStream?.current && localVideo.current) {
       localVideo.current.srcObject = localStream.current;
-
-      localVideo.current
-        .play()
-        .catch((e) => console.log("Local play blocked:", e));
     }
   }, [localStream]);
 
-  /* ================= REMOTE ================= */
+  /* REMOTE */
   useEffect(() => {
     if (remoteStream && remoteVideo.current) {
-      console.log("ATTACHING REMOTE STREAM:", remoteStream);
-
       remoteVideo.current.srcObject = remoteStream;
 
       remoteVideo.current.muted = false;
       remoteVideo.current.volume = 1;
 
-      setTimeout(() => {
-        remoteVideo.current
-          .play()
-          .then(() => console.log("REMOTE PLAYING"))
-          .catch((err) => console.log("Autoplay blocked:", err));
-      }, 300);
+      remoteVideo.current.play().catch(() => {});
     }
   }, [remoteStream]);
 
@@ -42,7 +38,7 @@ function CallUI({ localStream, remoteStream }) {
         position: "fixed",
         inset: 0,
         background: "black",
-        zIndex: 9999,
+        zIndex: 1000,
       }}
     >
       {/* 🔵 REMOTE VIDEO */}
@@ -54,7 +50,6 @@ function CallUI({ localStream, remoteStream }) {
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          background: "black",
         }}
       />
 
@@ -66,17 +61,59 @@ function CallUI({ localStream, remoteStream }) {
         playsInline
         style={{
           position: "absolute",
-          bottom: 20,
+          bottom: 100,
           right: 20,
-          width: "140px",
-          height: "180px",
-          borderRadius: "12px",
-          objectFit: "cover",
+          width: "120px",
+          borderRadius: "10px",
           border: "2px solid white",
         }}
       />
+
+      {/* 🔥 CONTROLS (VISIBLE) */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 20,
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          gap: "20px",
+          zIndex: 2000, // 🔥 IMPORTANT
+        }}
+      >
+        <button
+          onClick={() => switchMedia("audio")}
+          style={btnStyle}
+        >
+          <IoCall />
+        </button>
+
+        <button
+          onClick={endCall}
+          style={{ ...btnStyle, background: "red" }}
+        >
+          <MdCallEnd />
+        </button>
+
+        <button
+          onClick={() => switchMedia("video")}
+          style={btnStyle}
+        >
+          <IoVideocam />
+        </button>
+      </div>
     </div>
   );
 }
+
+const btnStyle = {
+  width: "60px",
+  height: "60px",
+  borderRadius: "50%",
+  border: "none",
+  fontSize: "22px",
+  background: "#333",
+  color: "white",
+};
 
 export default CallUI;

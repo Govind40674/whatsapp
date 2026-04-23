@@ -115,7 +115,11 @@ function MessageBox() {
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           {chattingWith.image ? (
-            <img src={chattingWith.image} alt="" className={styles.profilePic} />
+            <img
+              src={chattingWith.image}
+              alt=""
+              className={styles.profilePic}
+            />
           ) : (
             <div className={styles.defaultAvatar}>
               {chattingWith.name?.[0]?.toUpperCase()}
@@ -123,10 +127,8 @@ function MessageBox() {
           )}
         </div>
 
-        <div className={styles.headerCenter}>
-          {chattingWith.name || "User"}
-        </div>
- <div>
+        <div className={styles.headerCenter}>{chattingWith.name || "User"}</div>
+        <div>
           {!callActive && (
             <>
               <button onClick={() => startCall("audio")}>
@@ -160,12 +162,16 @@ function MessageBox() {
       )}
 
       {/* CALL UI */}
-    {callActive && (
-      <CallUI localStream={localStream} remoteStream={remoteStream} />
-    )}
+      {callActive && (
+        <CallUI
+          localStream={localStream}
+          remoteStream={remoteStream}
+          endCall={endCall}
+          switchMedia={switchMedia}
+        />
+      )}
 
-    
-    <div className={styles.chatArea}>
+      <div className={styles.chatArea}>
         {messages.map((msg, i) => {
           const isMe = msg.sender === myEmail;
 
