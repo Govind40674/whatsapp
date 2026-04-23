@@ -11,7 +11,7 @@ export default function useCall(roomId) {
   const [callActive, setCallActive] = useState(false);
 
   /* =========================
-     ✅ CREATE PEER (WITH YOUR TURN)
+     ✅ CREATE PEER
   ========================= */
   const createPeer = () => {
     const pc = new RTCPeerConnection({
@@ -23,29 +23,26 @@ export default function useCall(roomId) {
           credential: "SNcVJO2SbmlqNjHz",
         },
         {
-          urls: "turn:global.relay.metered.ca:80?transport=tcp",
-          username: "06233b956b58f15417080948",
-          credential: "SNcVJO2SbmlqNjHz",
-        },
-        {
           urls: "turn:global.relay.metered.ca:443",
-          username: "06233b956b58f15417080948",
-          credential: "SNcVJO2SbmlqNjHz",
-        },
-        {
-          urls: "turns:global.relay.metered.ca:443?transport=tcp",
           username: "06233b956b58f15417080948",
           credential: "SNcVJO2SbmlqNjHz",
         },
       ],
     });
 
-    /* 🔥 TRACK (AUDIO FIX) */
+    /* 🔥 TRACK (VERY IMPORTANT FIX) */
     pc.ontrack = (event) => {
-      const stream = event.streams[0];
+      console.log("TRACK RECEIVED:", event);
 
-      // ensure audio enabled
-      stream.getAudioTracks().forEach((t) => (t.enabled = true));
+      let stream;
+
+      if (event.streams && event.streams[0]) {
+        stream = event.streams[0];
+      } else {
+        // fallback for some browsers
+        stream = new MediaStream();
+        stream.addTrack(event.track);
+      }
 
       setRemoteStream(stream);
     };
@@ -67,57 +64,65 @@ export default function useCall(roomId) {
      🔹 START CALL
   ========================= */
   const startCall = async (type = "video") => {
-    localStream.current = await navigator.mediaDevices.getUserMedia({
-      video: type === "video",
-      audio: true,
-    });
+    try {
+      localStream.current = await navigator.mediaDevices.getUserMedia({
+        video: type === "video",
+        audio: true,
+      });
 
-    peer.current = createPeer();
+      peer.current = createPeer();
 
-    localStream.current.getTracks().forEach((track) => {
-      peer.current.addTrack(track, localStream.current);
-    });
+      localStream.current.getTracks().forEach((track) => {
+        peer.current.addTrack(track, localStream.current);
+      });
 
-    const offer = await peer.current.createOffer();
-    await peer.current.setLocalDescription(offer);
+      const offer = await peer.current.createOffer();
+      await peer.current.setLocalDescription(offer);
 
-    socket.emit("call-user", { offer, roomId });
+      socket.emit("call-user", { offer, roomId });
 
-    setCallActive(true);
+      setCallActive(true);
+    } catch (err) {
+      console.error("Start call error:", err);
+    }
   };
 
   /* =========================
      🔹 ACCEPT CALL
   ========================= */
   const acceptCall = async () => {
-    const offer = incomingCall;
+    try {
+      const offer = incomingCall;
 
-    localStream.current = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
+      localStream.current = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
 
-    peer.current = createPeer();
+      peer.current = createPeer();
 
-    localStream.current.getTracks().forEach((track) => {
-      peer.current.addTrack(track, localStream.current);
-    });
+      localStream.current.getTracks().forEach((track) => {
+        peer.current.addTrack(track, localStream.current);
+      });
 
-    await peer.current.setRemoteDescription(offer);
+      await peer.current.setRemoteDescription(offer);
 
-    // ✅ APPLY pending ICE
-    for (let c of pendingCandidates.current) {
-      await peer.current.addIceCandidate(c);
+      // ✅ APPLY ICE AFTER REMOTE DESC
+      for (let c of pendingCandidates.current) {
+        await peer.current.addIceCandidate(c);
+      }
+      pendingCandidates.current = [];
+
+      const answer = await peer.current.createAnswer();
+      await peer.current.setLocalDescription(answer);
+
+      socket.emit("answer-call", { answer, roomId });
+
+      setIncomingCall(null);
+      setCallActive(true);
+    } catch (err) {
+      console.error("Accept error:", err);
     }
-    pendingCandidates.current = [];
-
-    const answer = await peer.current.createAnswer();
-    await peer.current.setLocalDescription(answer);
-
-    socket.emit("answer-call", { answer, roomId });
-
-    setIncomingCall(null);
-    setCallActive(true);
   };
 
   /* =========================
@@ -148,15 +153,19 @@ export default function useCall(roomId) {
       audio: true,
     });
 
+    const senders = peer.current.getSenders();
+
     const videoTrack = newStream.getVideoTracks()[0];
+    const audioTrack = newStream.getAudioTracks()[0];
 
-    const sender = peer.current
-      .getSenders()
-      .find((s) => s.track?.kind === "video");
-
-    if (sender && videoTrack) {
-      sender.replaceTrack(videoTrack);
-    }
+    senders.forEach((sender) => {
+      if (sender.track?.kind === "video" && videoTrack) {
+        sender.replaceTrack(videoTrack);
+      }
+      if (sender.track?.kind === "audio" && audioTrack) {
+        sender.replaceTrack(audioTrack);
+      }
+    });
 
     localStream.current = newStream;
   };
@@ -171,14 +180,20 @@ export default function useCall(roomId) {
 
     socket.on("call-accepted", async ({ answer }) => {
       await peer.current.setRemoteDescription(answer);
+
+      // ✅ APPLY ICE AFTER ANSWER
+      for (let c of pendingCandidates.current) {
+        await peer.current.addIceCandidate(c);
+      }
+      pendingCandidates.current = [];
     });
 
     socket.on("ice-candidate", async ({ candidate }) => {
-      if (peer.current) {
+      if (peer.current && peer.current.remoteDescription) {
         try {
           await peer.current.addIceCandidate(candidate);
-        } catch {
-          pendingCandidates.current.push(candidate);
+        } catch (err) {
+          console.error("ICE error:", err);
         }
       } else {
         pendingCandidates.current.push(candidate);

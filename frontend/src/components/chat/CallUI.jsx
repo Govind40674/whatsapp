@@ -1,94 +1,82 @@
 import React, { useEffect, useRef } from "react";
 
-function CallUI({
-  localStream,
-  remoteStream,
-  callActive,
-  incomingCall,
-  acceptCall,
-  endCall,
-}) {
+function CallUI({ localStream, remoteStream }) {
   const localVideo = useRef(null);
   const remoteVideo = useRef(null);
 
+  /* ================= LOCAL ================= */
   useEffect(() => {
     if (localStream?.current && localVideo.current) {
       localVideo.current.srcObject = localStream.current;
-    }
-  }, [localStream?.current]);
 
+      localVideo.current
+        .play()
+        .catch((e) => console.log("Local play blocked:", e));
+    }
+  }, [localStream]);
+
+  /* ================= REMOTE ================= */
   useEffect(() => {
     if (remoteStream && remoteVideo.current) {
+      console.log("ATTACHING REMOTE STREAM:", remoteStream);
+
       remoteVideo.current.srcObject = remoteStream;
 
       remoteVideo.current.muted = false;
       remoteVideo.current.volume = 1;
 
-      remoteVideo.current.play().catch(() => {});
+      setTimeout(() => {
+        remoteVideo.current
+          .play()
+          .then(() => console.log("REMOTE PLAYING"))
+          .catch((err) => console.log("Autoplay blocked:", err));
+      }, 300);
     }
   }, [remoteStream]);
 
-  /* 🔴 Incoming Call UI */
-  if (incomingCall && !callActive) {
-    return (
-      <div style={overlay}>
-        <h2>Incoming Call 📞</h2>
-        <button onClick={acceptCall}>Accept</button>
-        <button onClick={endCall}>Reject</button>
-      </div>
-    );
-  }
-
-  if (!callActive) return null;
+  if (!localStream?.current && !remoteStream) return null;
 
   return (
-    <div style={overlay}>
-      {/* Remote */}
-      <video ref={remoteVideo} autoPlay playsInline style={remoteStyle} />
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "black",
+        zIndex: 9999,
+      }}
+    >
+      {/* 🔵 REMOTE VIDEO */}
+      <video
+        ref={remoteVideo}
+        autoPlay
+        playsInline
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          background: "black",
+        }}
+      />
 
-      {/* Local */}
-      <video ref={localVideo} autoPlay muted playsInline style={localStyle} />
-
-      {/* Controls */}
-      <div style={controls}>
-        <button onClick={endCall} style={{ background: "red" }}>
-          End
-        </button>
-      </div>
+      {/* 🟢 LOCAL VIDEO */}
+      <video
+        ref={localVideo}
+        autoPlay
+        muted
+        playsInline
+        style={{
+          position: "absolute",
+          bottom: 20,
+          right: 20,
+          width: "140px",
+          height: "180px",
+          borderRadius: "12px",
+          objectFit: "cover",
+          border: "2px solid white",
+        }}
+      />
     </div>
   );
 }
-
-const overlay = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100%",
-  height: "100%",
-  background: "black",
-  zIndex: 999,
-};
-
-const remoteStyle = {
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-};
-
-const localStyle = {
-  position: "absolute",
-  bottom: 20,
-  right: 20,
-  width: "120px",
-  borderRadius: "10px",
-};
-
-const controls = {
-  position: "absolute",
-  bottom: 40,
-  width: "100%",
-  display: "flex",
-  justifyContent: "center",
-};
 
 export default CallUI;

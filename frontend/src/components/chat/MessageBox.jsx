@@ -126,8 +126,7 @@ function MessageBox() {
         <div className={styles.headerCenter}>
           {chattingWith.name || "User"}
         </div>
-
-        <div className={styles.headerRight}>
+ <div>
           {!callActive && (
             <>
               <button onClick={() => startCall("audio")}>
@@ -141,12 +140,8 @@ function MessageBox() {
 
           {callActive && (
             <>
-              <button onClick={() => switchMedia("audio")}>
-                Audio
-              </button>
-              <button onClick={() => switchMedia("video")}>
-                Video
-              </button>
+              <button onClick={() => switchMedia("audio")}>Audio</button>
+              <button onClick={() => switchMedia("video")}>Video</button>
               <button onClick={endCall}>
                 <MdCallEnd color="red" />
               </button>
@@ -155,37 +150,22 @@ function MessageBox() {
         </div>
       </div>
 
-      {/* ================= INCOMING CALL UI ================= */}
+      {/* INCOMING */}
       {incomingCall && !callActive && (
-        <div
-          style={{
-            position: "absolute",
-            top: "40%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "#222",
-            padding: "20px",
-            borderRadius: "10px",
-            color: "white",
-            zIndex: 999,
-          }}
-        >
-          <p>Incoming Call...</p>
+        <div className={styles.popup}>
+          <p>Incoming Call</p>
           <button onClick={acceptCall}>Accept</button>
           <button onClick={endCall}>Reject</button>
         </div>
       )}
 
-      {/* ================= CALL UI ================= */}
-      {callActive && (
-        <CallUI
-          localStream={localStream}
-          remoteStream={remoteStream}
-        />
-      )}
+      {/* CALL UI */}
+    {callActive && (
+      <CallUI localStream={localStream} remoteStream={remoteStream} />
+    )}
 
-      {/* ================= CHAT ================= */}
-      <div className={styles.chatArea}>
+    
+    <div className={styles.chatArea}>
         {messages.map((msg, i) => {
           const isMe = msg.sender === myEmail;
 
