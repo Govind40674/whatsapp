@@ -32,7 +32,7 @@ function MessageBox() {
     callActive,
   } = useCall(roomId);
 
-  /* FETCH USER */
+  /* ================= USER ================= */
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -48,15 +48,15 @@ function MessageBox() {
     if (decodedEmail) fetchUser();
   }, [decodedEmail]);
 
-  /* SOCKET ROOM */
+  /* ================= SOCKET ================= */
   useEffect(() => {
     if (!myEmail || !decodedEmail) return;
 
     socket.emit("joinRoom", roomId);
     return () => socket.emit("leaveRoom", roomId);
-  }, [roomId, myEmail, decodedEmail]);
+  }, [roomId]);
 
-  /* FETCH MESSAGES */
+  /* ================= MESSAGES ================= */
   useEffect(() => {
     const fetchMessages = async () => {
       const res = await fetch(`${import.meta.env.VITE_URL}/messages`, {
@@ -73,9 +73,8 @@ function MessageBox() {
     };
 
     fetchMessages();
-  }, [decodedEmail, myEmail]);
+  }, [decodedEmail]);
 
-  /* RECEIVE MESSAGE */
   useEffect(() => {
     socket.on("receiveMessage", (msg) => {
       setMessages((prev) => [...prev, msg]);
@@ -97,24 +96,15 @@ function MessageBox() {
     setInput("");
   };
 
+  /* AUTO SCROLL */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  useEffect(() => {
-  const handleResize = () => {
-    document.body.style.height = window.innerHeight + "px";
-  };
-
-  window.addEventListener("resize", handleResize);
-  handleResize();
-
-  return () => window.removeEventListener("resize", handleResize);
-}, []);
-
   return (
     <div className={styles.container}>
-      {/* HEADER */}
+      
+      {/* ================= HEADER ================= */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           {chattingWith.image ? (
@@ -152,35 +142,16 @@ function MessageBox() {
         </div>
       </div>
 
-      {/* 🔥 INCOMING CALL UI */}
+      {/* ================= INCOMING CALL ================= */}
       {incomingCall && !callActive && (
         <div className={styles.callOverlay}>
           <div className={styles.callPopup}>
-            {chattingWith.image ? (
-              <img
-                src={chattingWith.image}
-                className={styles.callAvatar}
-              />
-            ) : (
-              <div className={styles.callAvatarFallback}>
-                {chattingWith.name?.[0]?.toUpperCase() || "U"}
-              </div>
-            )}
-
             <h2>{chattingWith.name || "Incoming Call"}</h2>
-            <p>Calling you...</p>
-
             <div className={styles.callActions}>
-              <button
-                className={styles.rejectBtn}
-                onClick={endCall}
-              >
+              <button onClick={endCall} className={styles.rejectBtn}>
                 Reject
               </button>
-              <button
-                className={styles.acceptBtn}
-                onClick={acceptCall}
-              >
+              <button onClick={acceptCall} className={styles.acceptBtn}>
                 Accept
               </button>
             </div>
@@ -188,7 +159,7 @@ function MessageBox() {
         </div>
       )}
 
-      {/* CALL UI */}
+      {/* ================= CALL UI ================= */}
       {callActive && (
         <CallUI
           localStream={localStream}
@@ -198,32 +169,31 @@ function MessageBox() {
         />
       )}
 
-      {/* CHAT + INPUT */}
-      <div className={styles.chatWrapper}>
-        <div className={styles.chatArea}>
-          {messages.map((msg, i) => {
-            const isMe = msg.sender === myEmail;
+      {/* ================= CHAT ================= */}
+      <div className={styles.chatArea}>
+        {messages.map((msg, i) => {
+          const isMe = msg.sender === myEmail;
 
-            return (
-              <div
-                key={i}
-                className={isMe ? styles.sent : styles.received}
-              >
-                {msg.content}
-              </div>
-            );
-          })}
-          <div ref={bottomRef}></div>
-        </div>
+          return (
+            <div key={i} className={isMe ? styles.sent : styles.received}>
+              {msg.content}
+            </div>
+          );
+        })}
+        <div ref={bottomRef}></div>
+      </div>
 
-        <div className={styles.inputArea}>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Type a message..."
-          />
-        </div>
+      {/* ================= INPUT ================= */}
+      <div className={styles.inputArea}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="Type a message..."
+        />
+        <button onClick={sendMessage} className={styles.sendBtn}>
+          ➤
+        </button>
       </div>
     </div>
   );
