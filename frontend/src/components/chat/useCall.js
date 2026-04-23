@@ -30,20 +30,14 @@ export default function useCall(roomId) {
       ],
     });
 
-    /* 🔥 TRACK (VERY IMPORTANT FIX) */
+    /* 🔥 TRACK */
     pc.ontrack = (event) => {
-      console.log("TRACK RECEIVED:", event);
+      let stream =
+        event.streams && event.streams[0]
+          ? event.streams[0]
+          : new MediaStream([event.track]);
 
-      let stream;
-
-      if (event.streams && event.streams[0]) {
-        stream = event.streams[0];
-      } else {
-        // fallback for some browsers
-        stream = new MediaStream();
-        stream.addTrack(event.track);
-      }
-
+      console.log("REMOTE STREAM:", stream);
       setRemoteStream(stream);
     };
 
@@ -65,6 +59,8 @@ export default function useCall(roomId) {
   ========================= */
   const startCall = async (type = "video") => {
     try {
+      endCall(); // 🔥 cleanup old call
+
       localStream.current = await navigator.mediaDevices.getUserMedia({
         video: type === "video",
         audio: true,
@@ -92,7 +88,7 @@ export default function useCall(roomId) {
   ========================= */
   const acceptCall = async () => {
     try {
-      const offer = incomingCall;
+      if (!incomingCall) return;
 
       localStream.current = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -105,9 +101,9 @@ export default function useCall(roomId) {
         peer.current.addTrack(track, localStream.current);
       });
 
-      await peer.current.setRemoteDescription(offer);
+      await peer.current.setRemoteDescription(incomingCall);
 
-      // ✅ APPLY ICE AFTER REMOTE DESC
+      // ✅ APPLY PENDING ICE
       for (let c of pendingCandidates.current) {
         await peer.current.addIceCandidate(c);
       }
@@ -128,89 +124,100 @@ export default function useCall(roomId) {
   /* =========================
      🔹 END CALL
   ========================= */
-const endCall = () => {
-  console.log("CALL ENDED");
+  const endCall = () => {
+    console.log("CALL ENDED");
 
-  // 🔥 stop all tracks
-  if (localStream.current) {
-    localStream.current.getTracks().forEach((t) => t.stop());
-    localStream.current = null;
-  }
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((t) => t.stop());
+      localStream.current = null;
+    }
 
-  // 🔥 close peer properly
-  if (peer.current) {
-    peer.current.ontrack = null;
-    peer.current.onicecandidate = null;
-    peer.current.close();
-    peer.current = null;
-  }
+    if (peer.current) {
+      peer.current.ontrack = null;
+      peer.current.onicecandidate = null;
+      peer.current.close();
+      peer.current = null;
+    }
 
-  // 🔥 reset EVERYTHING
-  setRemoteStream(null);
-  setCallActive(false);
-  setIncomingCall(null);
+    setRemoteStream(null);
+    setCallActive(false);
+    setIncomingCall(null);
+    pendingCandidates.current = [];
 
-  pendingCandidates.current = [];
-
-  socket.emit("end-call", { roomId });
-};
+    socket.emit("end-call", { roomId });
+  };
 
   /* =========================
-     🔹 SWITCH AUDIO / VIDEO
+     🔹 SWITCH MEDIA (WITH RENEGOTIATION)
   ========================= */
-const switchMedia = async (type) => {
-  if (!peer.current) return;
+  const switchMedia = async (type) => {
+    if (!peer.current) return;
 
-  const newStream = await navigator.mediaDevices.getUserMedia({
-    video: type === "video",
-    audio: true,
-  });
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video",
+        audio: true,
+      });
 
-  // 🔥 replace ALL tracks (not just video)
-  const senders = peer.current.getSenders();
+      const senders = peer.current.getSenders();
 
-  newStream.getTracks().forEach((track) => {
-    const sender = senders.find((s) => s.track?.kind === track.kind);
-    if (sender) {
-      sender.replaceTrack(track);
-    } else {
-      peer.current.addTrack(track, newStream);
+      newStream.getTracks().forEach((track) => {
+        const sender = senders.find((s) => s.track?.kind === track.kind);
+        if (sender) {
+          sender.replaceTrack(track);
+        } else {
+          peer.current.addTrack(track, newStream);
+        }
+      });
+
+      localStream.current?.getTracks().forEach((t) => t.stop());
+      localStream.current = newStream;
+
+      // 🔥 IMPORTANT: renegotiate
+      const offer = await peer.current.createOffer();
+      await peer.current.setLocalDescription(offer);
+
+      socket.emit("call-user", { offer, roomId });
+    } catch (err) {
+      console.error("Switch media error:", err);
     }
-  });
-
-  // 🔥 stop old tracks
-  localStream.current?.getTracks().forEach((t) => t.stop());
-
-  localStream.current = newStream;
-};
+  };
 
   /* =========================
      🔹 SOCKET EVENTS
   ========================= */
   useEffect(() => {
-    socket.on("incoming-call", ({ offer }) => {
-      setIncomingCall(offer);
+    socket.on("incoming-call", (data) => {
+      if (!data?.offer) return;
+      setIncomingCall(data.offer);
     });
 
-    socket.on("call-accepted", async ({ answer }) => {
-      await peer.current.setRemoteDescription(answer);
+    socket.on("call-accepted", async (data) => {
+      if (!data?.answer || !peer.current) return;
 
-      // ✅ APPLY ICE AFTER ANSWER
-      for (let c of pendingCandidates.current) {
-        await peer.current.addIceCandidate(c);
-      }
-      pendingCandidates.current = [];
-    });
+      try {
+        await peer.current.setRemoteDescription(data.answer);
 
-    socket.on("ice-candidate", async ({ candidate }) => {
-      if (peer.current && peer.current.remoteDescription) {
-        try {
-          await peer.current.addIceCandidate(candidate);
-        } catch (err) {
-          console.error("ICE error:", err);
+        for (let c of pendingCandidates.current) {
+          await peer.current.addIceCandidate(c);
         }
-      } else {
-        pendingCandidates.current.push(candidate);
+        pendingCandidates.current = [];
+      } catch (err) {
+        console.error("Remote desc error:", err);
+      }
+    });
+
+    socket.on("ice-candidate", async (data) => {
+      if (!data?.candidate) return;
+
+      try {
+        if (peer.current && peer.current.remoteDescription) {
+          await peer.current.addIceCandidate(data.candidate);
+        } else {
+          pendingCandidates.current.push(data.candidate);
+        }
+      } catch (err) {
+        console.error("ICE error:", err);
       }
     });
 
