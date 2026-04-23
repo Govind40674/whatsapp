@@ -32,48 +32,89 @@ function MessageBox() {
     callActive,
   } = useCall(roomId);
 
-  /* USER */
+  /* =========================
+     🚫 PREVENT SELF CHAT
+  ========================= */
+  useEffect(() => {
+    if (myEmail === decodedEmail) {
+      console.warn("Cannot chat with yourself");
+    }
+  }, [myEmail, decodedEmail]);
+
+  /* =========================
+     👤 FETCH USER
+  ========================= */
   useEffect(() => {
     const fetchUser = async () => {
-      const res = await axios.get(`${import.meta.env.VITE_URL}/user`, {
-        params: { email: decodedEmail },
-      });
-      setChattingWith(res.data);
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_URL}/user`, {
+          params: { email: decodedEmail },
+        });
+        setChattingWith(res.data);
+      } catch (err) {
+        console.error("User fetch error:", err);
+      }
     };
+
     if (decodedEmail) fetchUser();
   }, [decodedEmail]);
 
-  /* SOCKET */
+  /* =========================
+     🔌 SOCKET ROOM JOIN
+  ========================= */
   useEffect(() => {
     if (!myEmail || !decodedEmail) return;
-    socket.emit("joinRoom", roomId);
-    return () => socket.emit("leaveRoom", roomId);
-  }, [roomId]);
 
-  /* MESSAGES */
+    socket.emit("joinRoom", roomId);
+
+    return () => {
+      socket.emit("leaveRoom", roomId);
+    };
+  }, [roomId, myEmail, decodedEmail]);
+
+  /* =========================
+     💬 FETCH OLD MESSAGES
+  ========================= */
   useEffect(() => {
     const fetchMessages = async () => {
-      const res = await fetch(`${import.meta.env.VITE_URL}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sender: myEmail,
-          receiver: decodedEmail,
-        }),
-      });
-      const data = await res.json();
-      setMessages(data);
+      try {
+        const res = await fetch(`${import.meta.env.VITE_URL}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender: myEmail,
+            receiver: decodedEmail,
+          }),
+        });
+
+        const data = await res.json();
+        setMessages(data);
+      } catch (err) {
+        console.error("Message fetch error:", err);
+      }
     };
+
     fetchMessages();
-  }, [decodedEmail]);
+  }, [decodedEmail, myEmail]);
 
+  /* =========================
+     🔁 RECEIVE MESSAGE (FIXED)
+  ========================= */
   useEffect(() => {
-    socket.on("receiveMessage", (msg) => {
+    const handleMessage = (msg) => {
       setMessages((prev) => [...prev, msg]);
-    });
-    return () => socket.off("receiveMessage");
-  }, []);
+    };
 
+    socket.on("receiveMessage", handleMessage);
+
+    return () => {
+      socket.off("receiveMessage", handleMessage);
+    };
+  }, [roomId]);
+
+  /* =========================
+     📤 SEND MESSAGE
+  ========================= */
   const sendMessage = () => {
     if (!input.trim()) return;
 
@@ -87,14 +128,30 @@ function MessageBox() {
     setInput("");
   };
 
-  /* AUTO SCROLL */
+  /* =========================
+     🔽 AUTO SCROLL
+  ========================= */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
     <div className={styles.container}>
-      {/* HEADER */}
+      {/* =========================
+          📞 CALL UI (TOP LAYER)
+      ========================= */}
+      {callActive && (
+        <CallUI
+          localStream={localStream}
+          remoteStream={remoteStream}
+          switchMedia={switchMedia}
+          endCall={endCall}
+        />
+      )}
+
+      {/* =========================
+          HEADER
+      ========================= */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           {chattingWith.image ? (
@@ -106,7 +163,9 @@ function MessageBox() {
           )}
         </div>
 
-        <div className={styles.headerCenter}>{chattingWith.name || "User"}</div>
+        <div className={styles.headerCenter}>
+          {chattingWith.name || "User"}
+        </div>
 
         <div className={styles.headerRight}>
           {!callActive ? (
@@ -130,11 +189,12 @@ function MessageBox() {
         </div>
       </div>
 
-      {/* INCOMING CALL */}
+      {/* =========================
+          📲 INCOMING CALL
+      ========================= */}
       {incomingCall && !callActive && (
         <div className={styles.callOverlay}>
           <div className={styles.callCard}>
-            {/* Profile */}
             <div className={styles.avatarWrapper}>
               {chattingWith.image ? (
                 <img src={chattingWith.image} className={styles.avatar} />
@@ -145,22 +205,17 @@ function MessageBox() {
               )}
             </div>
 
-            {/* Name */}
             <h2 className={styles.callerName}>
               {chattingWith.name || "Incoming Call"}
             </h2>
 
             <p className={styles.callText}>Incoming call...</p>
 
-            {/* Buttons */}
             <div className={styles.callButtons}>
               <button onClick={endCall} className={styles.rejectBtn}>
                 ❌
               </button>
 
-              {/* <button onClick={acceptCall} className={styles.acceptBtn}>
-                📞
-              </button> */}
               <button
                 onClick={() => acceptCall(incomingCall)}
                 className={styles.acceptBtn}
@@ -172,18 +227,9 @@ function MessageBox() {
         </div>
       )}
 
-      {/* CALL UI */}
-      {callActive && (
-        <CallUI
-          localStream={localStream}
-          remoteStream={remoteStream}
-          switchMedia={switchMedia}
-          endCall={endCall}
-        />
-      )}
-
-      {/* CHAT AREA */}
-      {/* CHAT AREA (HIDE DURING CALL) */}
+      {/* =========================
+          💬 CHAT AREA (HIDDEN DURING CALL)
+      ========================= */}
       {!callActive && (
         <div className={styles.chatArea}>
           {messages.map((msg, i) => {
@@ -198,8 +244,9 @@ function MessageBox() {
         </div>
       )}
 
-      {/* INPUT */}
-      {/* INPUT */}
+      {/* =========================
+          ✍️ INPUT (HIDDEN DURING CALL)
+      ========================= */}
       {!callActive && (
         <div className={styles.inputArea}>
           <input
