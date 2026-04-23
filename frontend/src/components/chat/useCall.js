@@ -5,7 +5,10 @@ export default function useCall(roomId) {
   const peer = useRef(null);
   const localStream = useRef(null);
   const pendingCandidates = useRef([]);
-  const isEnding = useRef(false); // 🔥 prevent loop
+  const isEnding = useRef(false);
+
+  // ✅ MUST BE INSIDE HOOK
+  const [, forceUpdate] = useState(0);
 
   const [remoteStream, setRemoteStream] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null);
@@ -118,25 +121,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔹 END CALL (FIXED)
-  ========================= */
-  const endCall = () => {
-    if (isEnding.current) return; // 🔥 prevent loop
-    isEnding.current = true;
-
-    console.log("CALL ENDED");
-
-    cleanUp();
-
-    setTimeout(() => {
-      isEnding.current = false;
-    }, 500);
-
-    socket.emit("end-call", { roomId });
-  };
-
-  /* =========================
-     🔹 CLEANUP (IMPORTANT)
+     🔹 CLEANUP
   ========================= */
   const cleanUp = () => {
     if (localStream.current) {
@@ -158,7 +143,25 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔹 SWITCH MEDIA (REAL FIX)
+     🔹 END CALL
+  ========================= */
+  const endCall = () => {
+    if (isEnding.current) return;
+
+    isEnding.current = true;
+    console.log("CALL ENDED");
+
+    cleanUp();
+
+    setTimeout(() => {
+      isEnding.current = false;
+    }, 500);
+
+    socket.emit("end-call", { roomId });
+  };
+
+  /* =========================
+     🔹 SWITCH MEDIA (FINAL FIX)
   ========================= */
   const switchMedia = async (type) => {
     if (!peer.current) return;
@@ -171,7 +174,6 @@ export default function useCall(roomId) {
 
       const senders = peer.current.getSenders();
 
-      // 🔥 Replace tracks (NO renegotiation)
       newStream.getTracks().forEach((track) => {
         const sender = senders.find(
           (s) => s.track && s.track.kind === track.kind
@@ -182,10 +184,13 @@ export default function useCall(roomId) {
         }
       });
 
-      // 🔥 Stop old tracks
+      // stop old tracks
       localStream.current?.getTracks().forEach((t) => t.stop());
 
       localStream.current = newStream;
+
+      // 🔥 FORCE UI UPDATE (IMPORTANT)
+      forceUpdate((prev) => prev + 1);
 
       console.log("Switched to:", type);
     } catch (err) {
