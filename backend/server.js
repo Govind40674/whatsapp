@@ -64,61 +64,70 @@ io.on("connection", (socket) => {
   console.log("🔥 User connected:", socket.id);
 
   /* =========================
-     🔹 JOIN ROOM FIRST
+     🔹 JOIN ROOM
   ========================= */
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
-    console.log(`✅ ${socket.id} joined room: ${roomId}`);
+    socket.roomId = roomId; // 🔥 SAVE ROOM
+    console.log(`✅ ${socket.id} joined ${roomId}`);
   });
 
   socket.on("leaveRoom", (roomId) => {
     socket.leave(roomId);
-    console.log(`❌ ${socket.id} left room: ${roomId}`);
+    console.log(`❌ ${socket.id} left ${roomId}`);
   });
 
   /* =========================
      📞 CALLING SYSTEM
   ========================= */
 
-  // 🔹 CALL USER
   socket.on("call-user", ({ offer, roomId }) => {
-    console.log("📤 Sending OFFER to room:", roomId);
-
     socket.to(roomId).emit("incoming-call", { offer });
   });
 
-  // 🔹 ACCEPT CALL
   socket.on("answer-call", ({ answer, roomId }) => {
-    console.log("📥 Sending ANSWER to room:", roomId);
-
     socket.to(roomId).emit("call-accepted", { answer });
   });
 
-  // 🔹 ICE CANDIDATES
   socket.on("ice-candidate", ({ candidate, roomId }) => {
-    // console.log("❄️ ICE candidate sent");
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
-socket.on("rejoin-call", ({ roomId }) => {
-  socket.join(roomId);
 
-  // notify other user
-  socket.to(roomId).emit("user-reconnected");
-});
-  // 🔴 END CALL (IMPORTANT)
+  /* =========================
+     🔁 RECONNECT SYSTEM
+  ========================= */
+
+  socket.on("rejoin-call", ({ roomId }) => {
+    socket.join(roomId);
+    socket.roomId = roomId;
+
+    console.log("🔁 User rejoined:", roomId);
+
+    socket.to(roomId).emit("user-reconnected");
+  });
+
+  // 🔥 NEW EVENT
+  socket.on("peer-disconnected", ({ roomId }) => {
+    console.log("⚠️ Peer lost connection");
+
+    socket.to(roomId).emit("peer-disconnected");
+  });
+
+  /* =========================
+     🔴 END CALL
+  ========================= */
+
   socket.on("end-call", ({ roomId }) => {
-    console.log("📴 Call ended in room:", roomId);
     socket.to(roomId).emit("end-call");
   });
 
   /* =========================
-     💬 MESSAGING SYSTEM
+     💬 MESSAGES
   ========================= */
 
   socket.on("sendMessage", async (data) => {
     try {
       const { sender, receiver, content } = data;
-
       const roomId = [sender, receiver].sort().join("_");
 
       const newMessage = await Message.create({
@@ -130,18 +139,22 @@ socket.on("rejoin-call", ({ roomId }) => {
 
       io.to(roomId).emit("receiveMessage", newMessage);
     } catch (err) {
-      console.error("❌ Message Error:", err);
+      console.error(err);
     }
   });
 
   /* =========================
      🔌 DISCONNECT
   ========================= */
-  socket.on("disconnect", (reason) => {
-    console.log("❌ Disconnected:", socket.id, "| Reason:", reason);
+
+  socket.on("disconnect", () => {
+    console.log("❌ Disconnected:", socket.id);
+
+    if (socket.roomId) {
+      socket.to(socket.roomId).emit("peer-disconnected");
+    }
   });
 });
-
 /* =========================
    🔹 FETCH MESSAGES
 ========================= */

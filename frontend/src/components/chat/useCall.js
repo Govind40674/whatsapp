@@ -10,7 +10,7 @@ export default function useCall(roomId) {
   const [, forceUpdate] = useState(0);
 
   const [remoteStream, setRemoteStream] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null); // store OFFER
+  const [incomingCall, setIncomingCall] = useState(null);
   const [callActive, setCallActive] = useState(false);
 
   /* =========================
@@ -28,6 +28,7 @@ export default function useCall(roomId) {
       ],
     });
 
+    // 🎥 REMOTE STREAM
     pc.ontrack = (event) => {
       const stream =
         event.streams?.[0] || new MediaStream([event.track]);
@@ -35,12 +36,29 @@ export default function useCall(roomId) {
       setRemoteStream(stream);
     };
 
+    // ❄️ ICE
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit("ice-candidate", {
           candidate: event.candidate,
           roomId,
         });
+      }
+    };
+
+    // 🔥 CONNECTION STATE (IMPORTANT FIX)
+    pc.onconnectionstatechange = () => {
+      console.log("STATE:", pc.connectionState);
+
+      if (
+        pc.connectionState === "disconnected" ||
+        pc.connectionState === "failed" ||
+        pc.connectionState === "closed"
+      ) {
+        console.log("❌ Connection lost");
+
+        socket.emit("peer-disconnected", { roomId });
+        cleanUp();
       }
     };
 
@@ -78,7 +96,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔹 ACCEPT CALL (FIXED)
+     🔹 ACCEPT CALL
   ========================= */
   const acceptCall = async (offer) => {
     try {
@@ -151,7 +169,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔹 SWITCH MEDIA (kept)
+     🔹 SWITCH MEDIA
   ========================= */
   const switchMedia = async (type) => {
     if (!peer.current) return;
@@ -182,7 +200,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔹 AUTO RECONNECT
+     🔁 AUTO RECONNECT (AFTER REFRESH)
   ========================= */
   useEffect(() => {
     const savedRoom = localStorage.getItem("activeCall");
@@ -194,6 +212,23 @@ export default function useCall(roomId) {
   }, [roomId]);
 
   /* =========================
+     🔁 PEER DISCONNECT HANDLE
+  ========================= */
+  useEffect(() => {
+    socket.on("peer-disconnected", async () => {
+      console.log("🔄 Peer disconnected → restarting");
+
+      const savedRoom = localStorage.getItem("activeCall");
+
+      if (savedRoom === roomId) {
+        await startCall("video");
+      }
+    });
+
+    return () => socket.off("peer-disconnected");
+  }, []);
+
+  /* =========================
      🔹 SOCKET EVENTS
   ========================= */
   useEffect(() => {
@@ -202,6 +237,7 @@ export default function useCall(roomId) {
 
       const isReconnect = localStorage.getItem("reconnecting");
 
+      // 🔥 AUTO ACCEPT (NO POPUP)
       if (isReconnect === "true") {
         console.log("⚡ Auto reconnect accept");
 
@@ -210,6 +246,7 @@ export default function useCall(roomId) {
         return;
       }
 
+      // normal call
       setIncomingCall(data.offer);
     });
 
