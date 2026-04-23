@@ -5,6 +5,7 @@ export default function useCall(roomId) {
   const peer = useRef(null);
   const localStream = useRef(null);
   const pendingCandidates = useRef([]);
+  const isEnding = useRef(false); // 🔥 prevent loop
 
   const [remoteStream, setRemoteStream] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null);
@@ -30,18 +31,14 @@ export default function useCall(roomId) {
       ],
     });
 
-    /* 🔥 TRACK */
     pc.ontrack = (event) => {
-      let stream =
-        event.streams && event.streams[0]
-          ? event.streams[0]
-          : new MediaStream([event.track]);
+      const stream =
+        event.streams?.[0] || new MediaStream([event.track]);
 
       console.log("REMOTE STREAM:", stream);
       setRemoteStream(stream);
     };
 
-    /* 🔥 ICE SEND */
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit("ice-candidate", {
@@ -59,7 +56,7 @@ export default function useCall(roomId) {
   ========================= */
   const startCall = async (type = "video") => {
     try {
-      endCall(); // 🔥 cleanup old call
+      cleanUp();
 
       localStream.current = await navigator.mediaDevices.getUserMedia({
         video: type === "video",
@@ -79,7 +76,7 @@ export default function useCall(roomId) {
 
       setCallActive(true);
     } catch (err) {
-      console.error("Start call error:", err);
+      console.error("Start error:", err);
     }
   };
 
@@ -103,7 +100,6 @@ export default function useCall(roomId) {
 
       await peer.current.setRemoteDescription(incomingCall);
 
-      // ✅ APPLY PENDING ICE
       for (let c of pendingCandidates.current) {
         await peer.current.addIceCandidate(c);
       }
@@ -122,11 +118,27 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔹 END CALL
+     🔹 END CALL (FIXED)
   ========================= */
   const endCall = () => {
+    if (isEnding.current) return; // 🔥 prevent loop
+    isEnding.current = true;
+
     console.log("CALL ENDED");
 
+    cleanUp();
+
+    setTimeout(() => {
+      isEnding.current = false;
+    }, 500);
+
+    socket.emit("end-call", { roomId });
+  };
+
+  /* =========================
+     🔹 CLEANUP (IMPORTANT)
+  ========================= */
+  const cleanUp = () => {
     if (localStream.current) {
       localStream.current.getTracks().forEach((t) => t.stop());
       localStream.current = null;
@@ -143,15 +155,10 @@ export default function useCall(roomId) {
     setCallActive(false);
     setIncomingCall(null);
     pendingCandidates.current = [];
-
-    // 🔥 prevent infinite loop
-    if (callActive) {
-      socket.emit("end-call", { roomId });
-    }
   };
 
   /* =========================
-     🔹 SWITCH MEDIA (WITH RENEGOTIATION)
+     🔹 SWITCH MEDIA (REAL FIX)
   ========================= */
   const switchMedia = async (type) => {
     if (!peer.current) return;
@@ -164,25 +171,25 @@ export default function useCall(roomId) {
 
       const senders = peer.current.getSenders();
 
+      // 🔥 Replace tracks (NO renegotiation)
       newStream.getTracks().forEach((track) => {
-        const sender = senders.find((s) => s.track?.kind === track.kind);
+        const sender = senders.find(
+          (s) => s.track && s.track.kind === track.kind
+        );
+
         if (sender) {
           sender.replaceTrack(track);
-        } else {
-          peer.current.addTrack(track, newStream);
         }
       });
 
+      // 🔥 Stop old tracks
       localStream.current?.getTracks().forEach((t) => t.stop());
+
       localStream.current = newStream;
 
-      // 🔥 IMPORTANT: renegotiate
-      const offer = await peer.current.createOffer();
-      await peer.current.setLocalDescription(offer);
-
-      socket.emit("call-user", { offer, roomId });
+      console.log("Switched to:", type);
     } catch (err) {
-      console.error("Switch media error:", err);
+      console.error("Switch error:", err);
     }
   };
 
@@ -198,34 +205,27 @@ export default function useCall(roomId) {
     socket.on("call-accepted", async (data) => {
       if (!data?.answer || !peer.current) return;
 
-      try {
-        await peer.current.setRemoteDescription(data.answer);
+      await peer.current.setRemoteDescription(data.answer);
 
-        for (let c of pendingCandidates.current) {
-          await peer.current.addIceCandidate(c);
-        }
-        pendingCandidates.current = [];
-      } catch (err) {
-        console.error("Remote desc error:", err);
+      for (let c of pendingCandidates.current) {
+        await peer.current.addIceCandidate(c);
       }
+      pendingCandidates.current = [];
     });
 
     socket.on("ice-candidate", async (data) => {
       if (!data?.candidate) return;
 
-      try {
-        if (peer.current && peer.current.remoteDescription) {
-          await peer.current.addIceCandidate(data.candidate);
-        } else {
-          pendingCandidates.current.push(data.candidate);
-        }
-      } catch (err) {
-        console.error("ICE error:", err);
+      if (peer.current && peer.current.remoteDescription) {
+        await peer.current.addIceCandidate(data.candidate);
+      } else {
+        pendingCandidates.current.push(data.candidate);
       }
     });
 
     socket.on("end-call", () => {
-      endCall();
+      console.log("REMOTE ENDED CALL");
+      cleanUp();
     });
 
     return () => {
