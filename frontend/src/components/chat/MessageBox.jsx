@@ -183,30 +183,36 @@ function MessageBox() {
       )}
 
       {/* CHAT AREA */}
-      <div className={styles.chatArea}>
-        {messages.map((msg, i) => {
-          const isMe = msg.sender === myEmail;
-          return (
-            <div key={i} className={isMe ? styles.sent : styles.received}>
-              {msg.content}
-            </div>
-          );
-        })}
-        <div ref={bottomRef}></div>
-      </div>
+      {/* CHAT AREA (HIDE DURING CALL) */}
+      {!callActive && (
+        <div className={styles.chatArea}>
+          {messages.map((msg, i) => {
+            const isMe = msg.sender === myEmail;
+            return (
+              <div key={i} className={isMe ? styles.sent : styles.received}>
+                {msg.content}
+              </div>
+            );
+          })}
+          <div ref={bottomRef}></div>
+        </div>
+      )}
 
       {/* INPUT */}
-      <div className={styles.inputArea}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Type a message..."
-        />
-        <button onClick={sendMessage} className={styles.sendBtn}>
-          ➤
-        </button>
-      </div>
+      {/* INPUT */}
+      {!callActive && (
+        <div className={styles.inputArea}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            placeholder="Type a message..."
+          />
+          <button onClick={sendMessage} className={styles.sendBtn}>
+            ➤
+          </button>
+        </div>
+      )}
     </div>
   );
 }

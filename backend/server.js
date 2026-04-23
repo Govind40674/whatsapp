@@ -61,28 +61,14 @@ app.use(cookieParser());
 ========================= */
 
 io.on("connection", (socket) => {
-  console.log("🔥 User connected:", socket.id);
 
-  /* =========================
-     🔹 JOIN ROOM
-  ========================= */
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
-    socket.roomId = roomId; // 🔥 SAVE ROOM
-    console.log(`✅ ${socket.id} joined ${roomId}`);
   });
 
-  socket.on("leaveRoom", (roomId) => {
-    socket.leave(roomId);
-    console.log(`❌ ${socket.id} left ${roomId}`);
-  });
-
-  /* =========================
-     📞 CALLING SYSTEM
-  ========================= */
-
-  socket.on("call-user", ({ offer, roomId }) => {
-    socket.to(roomId).emit("incoming-call", { offer });
+  /* CALL */
+  socket.on("call-user", ({ offer, roomId, type }) => {
+    socket.to(roomId).emit("incoming-call", { offer, type });
   });
 
   socket.on("answer-call", ({ answer, roomId }) => {
@@ -93,66 +79,17 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
-  /* =========================
-     🔁 RECONNECT SYSTEM
-  ========================= */
-
-  socket.on("rejoin-call", ({ roomId }) => {
-    socket.join(roomId);
-    socket.roomId = roomId;
-
-    console.log("🔁 User rejoined:", roomId);
-
-    socket.to(roomId).emit("user-reconnected");
+  /* 🔥 RENEGOTIATION */
+  socket.on("renegotiate", ({ offer, roomId }) => {
+    socket.to(roomId).emit("renegotiate", { offer });
   });
 
-  // 🔥 NEW EVENT
-  socket.on("peer-disconnected", ({ roomId }) => {
-    console.log("⚠️ Peer lost connection");
-
-    socket.to(roomId).emit("peer-disconnected");
+  socket.on("renegotiate-answer", ({ answer, roomId }) => {
+    socket.to(roomId).emit("renegotiate-answer", { answer });
   });
-
-  /* =========================
-     🔴 END CALL
-  ========================= */
 
   socket.on("end-call", ({ roomId }) => {
     socket.to(roomId).emit("end-call");
-  });
-
-  /* =========================
-     💬 MESSAGES
-  ========================= */
-
-  socket.on("sendMessage", async (data) => {
-    try {
-      const { sender, receiver, content } = data;
-      const roomId = [sender, receiver].sort().join("_");
-
-      const newMessage = await Message.create({
-        sender,
-        receiver,
-        content,
-        roomId,
-      });
-
-      io.to(roomId).emit("receiveMessage", newMessage);
-    } catch (err) {
-      console.error(err);
-    }
-  });
-
-  /* =========================
-     🔌 DISCONNECT
-  ========================= */
-
-  socket.on("disconnect", () => {
-    console.log("❌ Disconnected:", socket.id);
-
-    if (socket.roomId) {
-      socket.to(socket.roomId).emit("peer-disconnected");
-    }
   });
 });
 /* =========================
