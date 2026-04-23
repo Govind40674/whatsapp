@@ -128,47 +128,61 @@ export default function useCall(roomId) {
   /* =========================
      🔹 END CALL
   ========================= */
-  const endCall = () => {
-    localStream.current?.getTracks().forEach((t) => t.stop());
+const endCall = () => {
+  console.log("CALL ENDED");
 
-    if (peer.current) {
-      peer.current.close();
-      peer.current = null;
-    }
+  // 🔥 stop all tracks
+  if (localStream.current) {
+    localStream.current.getTracks().forEach((t) => t.stop());
+    localStream.current = null;
+  }
 
-    setRemoteStream(null);
-    setCallActive(false);
+  // 🔥 close peer properly
+  if (peer.current) {
+    peer.current.ontrack = null;
+    peer.current.onicecandidate = null;
+    peer.current.close();
+    peer.current = null;
+  }
 
-    socket.emit("end-call", { roomId });
-  };
+  // 🔥 reset EVERYTHING
+  setRemoteStream(null);
+  setCallActive(false);
+  setIncomingCall(null);
+
+  pendingCandidates.current = [];
+
+  socket.emit("end-call", { roomId });
+};
 
   /* =========================
      🔹 SWITCH AUDIO / VIDEO
   ========================= */
-  const switchMedia = async (type) => {
-    if (!peer.current) return;
+const switchMedia = async (type) => {
+  if (!peer.current) return;
 
-    const newStream = await navigator.mediaDevices.getUserMedia({
-      video: type === "video",
-      audio: true,
-    });
+  const newStream = await navigator.mediaDevices.getUserMedia({
+    video: type === "video",
+    audio: true,
+  });
 
-    const senders = peer.current.getSenders();
+  // 🔥 replace ALL tracks (not just video)
+  const senders = peer.current.getSenders();
 
-    const videoTrack = newStream.getVideoTracks()[0];
-    const audioTrack = newStream.getAudioTracks()[0];
+  newStream.getTracks().forEach((track) => {
+    const sender = senders.find((s) => s.track?.kind === track.kind);
+    if (sender) {
+      sender.replaceTrack(track);
+    } else {
+      peer.current.addTrack(track, newStream);
+    }
+  });
 
-    senders.forEach((sender) => {
-      if (sender.track?.kind === "video" && videoTrack) {
-        sender.replaceTrack(videoTrack);
-      }
-      if (sender.track?.kind === "audio" && audioTrack) {
-        sender.replaceTrack(audioTrack);
-      }
-    });
+  // 🔥 stop old tracks
+  localStream.current?.getTracks().forEach((t) => t.stop());
 
-    localStream.current = newStream;
-  };
+  localStream.current = newStream;
+};
 
   /* =========================
      🔹 SOCKET EVENTS

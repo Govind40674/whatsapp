@@ -166,8 +166,8 @@ function MessageBox() {
         <CallUI
           localStream={localStream}
           remoteStream={remoteStream}
-          endCall={endCall}
           switchMedia={switchMedia}
+          endCall={endCall}
         />
       )}
 
