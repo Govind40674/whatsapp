@@ -1,62 +1,28 @@
-/* ================= BASE ================= */
-* {
-  box-sizing: border-box;
-}
-
 .container {
-  height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0f172a;
-  color: white;
+  height: 100vh;
+  height: 100dvh; /* 🔥 FIX for mobile keyboard */
+  background: #efeae2;
   overflow: hidden;
 }
 
 /* ================= HEADER ================= */
 .header {
-  height: 60px;
-  min-height: 60px;
-  flex-shrink: 0;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  background: #1e293b;
-  padding: 0 12px;
+  background: #075e54;
+  color: white;
+  padding: 10px;
+  flex-shrink: 0;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
 }
 
-.headerCenter {
-  font-weight: 600;
-  font-size: 16px;
-  text-align: center;
-  flex: 1;
-}
-
-.headerRight {
-  display: flex;
-  gap: 8px;
-}
-
-.headerRight button {
-  background: #334155;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ================= AVATAR ================= */
 .profilePic {
   width: 40px;
   height: 40px;
@@ -67,19 +33,17 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #475569;
+  background: #ccc;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   font-weight: bold;
 }
 
-/* ================= CHAT WRAPPER ================= */
-.chatWrapper {
+.headerCenter {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  margin-left: 10px;
+  font-weight: bold;
 }
 
 /* ================= CHAT AREA ================= */
@@ -91,194 +55,76 @@
   flex-direction: column;
 }
 
-/* SCROLLBAR (OPTIONAL) */
-.chatArea::-webkit-scrollbar {
-  width: 5px;
-}
-.chatArea::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 10px;
-}
-
-/* ================= MESSAGES ================= */
-.sent,
-.received {
-  padding: 8px 12px;
-  margin: 4px 0;
-  border-radius: 12px;
-  max-width: 75%;
-  word-wrap: break-word;
-  font-size: 14px;
-}
-
-/* SENT */
+/* Messages */
 .sent {
-  background: #22c55e;
   align-self: flex-end;
+  background: #dcf8c6;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 4px 0;
+  max-width: 70%;
 }
 
-/* RECEIVED */
 .received {
-  background: #334155;
   align-self: flex-start;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 4px 0;
+  max-width: 70%;
 }
 
-/* ================= INPUT ================= */
+/* ================= INPUT AREA ================= */
 .inputArea {
+  position: sticky; /* 🔥 IMPORTANT */
+  bottom: 0;
+  background: #f0f0f0;
+  padding: 8px;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid #ccc;
   flex-shrink: 0;
-  padding: 10px;
-  background: #1e293b;
-  border-top: 1px solid #334155;
 }
 
 .inputArea input {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 25px;
+  flex: 1;
+  padding: 10px;
+  border-radius: 20px;
   border: none;
   outline: none;
-  font-size: 14px;
+}
+
+.sendBtn {
+  background: #075e54;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 /* ================= CALL POPUP ================= */
-.callOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.callPopup {
-  background: #1e293b;
-  padding: 25px 20px;
-  border-radius: 18px;
+.popup {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1f2c34;
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
   text-align: center;
-  width: 90%;
-  max-width: 320px;
-  animation: scaleIn 0.25s ease;
+  z-index: 999;
 }
 
-/* AVATAR */
-.callAvatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  margin-bottom: 12px;
-}
-
-.callAvatarFallback {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #475569;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: auto;
-  font-size: 26px;
-}
-
-/* TEXT */
-.callPopup h2 {
-  margin: 5px 0;
-  font-size: 18px;
-}
-
-.callPopup p {
-  color: #aaa;
-  font-size: 14px;
-}
-
-/* BUTTONS */
-.callActions {
-  display: flex;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.acceptBtn {
-  flex: 1;
-  background: #22c55e;
-  border: none;
-  padding: 10px;
-  border-radius: 12px;
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.rejectBtn {
-  flex: 1;
-  background: red;
-  border: none;
-  padding: 10px;
-  border-radius: 12px;
-  color: white;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-/* ================= ANIMATION ================= */
-@keyframes scaleIn {
-  from {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* ================= RESPONSIVE ================= */
-
-/* 📱 MOBILE */
-@media (max-width: 480px) {
-  .headerCenter {
-    font-size: 14px;
-  }
-
+/* ================= MOBILE ================= */
+@media (max-width: 600px) {
   .sent,
   .received {
     max-width: 85%;
-    font-size: 13px;
   }
 
   .inputArea input {
-    font-size: 13px;
-    padding: 9px 12px;
-  }
-
-  .headerRight button {
-    padding: 5px 8px;
-  }
-}
-
-/* 📲 TABLET */
-@media (min-width: 481px) and (max-width: 768px) {
-  .sent,
-  .received {
-    max-width: 75%;
-  }
-}
-
-/* 💻 LAPTOP */
-@media (min-width: 769px) {
-  .container {
-    max-width: 900px;
-    margin: auto;
-    border-left: 1px solid #222;
-    border-right: 1px solid #222;
-  }
-}
-
-/* 🖥️ LARGE SCREEN */
-@media (min-width: 1200px) {
-  .container {
-    max-width: 1000px;
+    font-size: 16px; /* 🔥 prevent zoom */
   }
 }

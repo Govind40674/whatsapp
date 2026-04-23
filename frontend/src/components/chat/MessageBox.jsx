@@ -101,6 +101,17 @@ function MessageBox() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+  const handleResize = () => {
+    document.body.style.height = window.innerHeight + "px";
+  };
+
+  window.addEventListener("resize", handleResize);
+  handleResize();
+
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
+
   return (
     <div className={styles.container}>
       {/* HEADER */}
