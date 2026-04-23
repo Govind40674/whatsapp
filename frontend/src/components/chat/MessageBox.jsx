@@ -32,9 +32,7 @@ function MessageBox() {
     callActive,
   } = useCall(roomId);
 
-  /* =========================
-     🔹 FETCH USER
-  ========================= */
+  /* FETCH USER */
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -50,9 +48,7 @@ function MessageBox() {
     if (decodedEmail) fetchUser();
   }, [decodedEmail]);
 
-  /* =========================
-     🔹 SOCKET ROOM
-  ========================= */
+  /* SOCKET ROOM */
   useEffect(() => {
     if (!myEmail || !decodedEmail) return;
 
@@ -60,9 +56,7 @@ function MessageBox() {
     return () => socket.emit("leaveRoom", roomId);
   }, [roomId, myEmail, decodedEmail]);
 
-  /* =========================
-     🔹 FETCH MESSAGES
-  ========================= */
+  /* FETCH MESSAGES */
   useEffect(() => {
     const fetchMessages = async () => {
       const res = await fetch(`${import.meta.env.VITE_URL}/messages`, {
@@ -81,9 +75,7 @@ function MessageBox() {
     fetchMessages();
   }, [decodedEmail, myEmail]);
 
-  /* =========================
-     🔹 RECEIVE MESSAGE
-  ========================= */
+  /* RECEIVE MESSAGE */
   useEffect(() => {
     socket.on("receiveMessage", (msg) => {
       setMessages((prev) => [...prev, msg]);
@@ -111,15 +103,11 @@ function MessageBox() {
 
   return (
     <div className={styles.container}>
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           {chattingWith.image ? (
-            <img
-              src={chattingWith.image}
-              alt=""
-              className={styles.profilePic}
-            />
+            <img src={chattingWith.image} className={styles.profilePic} />
           ) : (
             <div className={styles.defaultAvatar}>
               {chattingWith.name?.[0]?.toUpperCase()}
@@ -127,9 +115,12 @@ function MessageBox() {
           )}
         </div>
 
-        <div className={styles.headerCenter}>{chattingWith.name || "User"}</div>
-        <div>
-          {!callActive && (
+        <div className={styles.headerCenter}>
+          {chattingWith.name || "User"}
+        </div>
+
+        <div className={styles.headerRight}>
+          {!callActive ? (
             <>
               <button onClick={() => startCall("audio")}>
                 <IoCall />
@@ -138,9 +129,7 @@ function MessageBox() {
                 <IoVideocam />
               </button>
             </>
-          )}
-
-          {callActive && (
+          ) : (
             <>
               <button onClick={() => switchMedia("audio")}>Audio</button>
               <button onClick={() => switchMedia("video")}>Video</button>
@@ -152,12 +141,39 @@ function MessageBox() {
         </div>
       </div>
 
-      {/* INCOMING */}
+      {/* 🔥 INCOMING CALL UI */}
       {incomingCall && !callActive && (
-        <div className={styles.popup}>
-          <p>Incoming Call</p>
-          <button onClick={acceptCall}>Accept</button>
-          <button onClick={endCall}>Reject</button>
+        <div className={styles.callOverlay}>
+          <div className={styles.callPopup}>
+            {chattingWith.image ? (
+              <img
+                src={chattingWith.image}
+                className={styles.callAvatar}
+              />
+            ) : (
+              <div className={styles.callAvatarFallback}>
+                {chattingWith.name?.[0]?.toUpperCase() || "U"}
+              </div>
+            )}
+
+            <h2>{chattingWith.name || "Incoming Call"}</h2>
+            <p>Calling you...</p>
+
+            <div className={styles.callActions}>
+              <button
+                className={styles.rejectBtn}
+                onClick={endCall}
+              >
+                Reject
+              </button>
+              <button
+                className={styles.acceptBtn}
+                onClick={acceptCall}
+              >
+                Accept
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -171,27 +187,32 @@ function MessageBox() {
         />
       )}
 
-      <div className={styles.chatArea}>
-        {messages.map((msg, i) => {
-          const isMe = msg.sender === myEmail;
+      {/* CHAT + INPUT */}
+      <div className={styles.chatWrapper}>
+        <div className={styles.chatArea}>
+          {messages.map((msg, i) => {
+            const isMe = msg.sender === myEmail;
 
-          return (
-            <div key={i} className={isMe ? styles.sent : styles.received}>
-              {msg.content}
-            </div>
-          );
-        })}
-        <div ref={bottomRef}></div>
-      </div>
+            return (
+              <div
+                key={i}
+                className={isMe ? styles.sent : styles.received}
+              >
+                {msg.content}
+              </div>
+            );
+          })}
+          <div ref={bottomRef}></div>
+        </div>
 
-      {/* ================= INPUT ================= */}
-      <div className={styles.inputArea}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Type a message..."
-        />
+        <div className={styles.inputArea}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            placeholder="Type a message..."
+          />
+        </div>
       </div>
     </div>
   );

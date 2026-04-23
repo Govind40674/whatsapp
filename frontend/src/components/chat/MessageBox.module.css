@@ -1,70 +1,88 @@
-/* MAIN CONTAINER */
-.container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #efeae2;
+/* ================= BASE ================= */
+* {
+  box-sizing: border-box;
 }
 
-/* HEADER */
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  color: white;
+  overflow: hidden;
+}
+
+/* ================= HEADER ================= */
 .header {
+  height: 60px;
+  min-height: 60px;
+  flex-shrink: 0;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background-color: #075e54;
-  color: white;
+
+  background: #1e293b;
+  padding: 0 12px;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
+.headerCenter {
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  flex: 1;
+}
+
+.headerRight {
+  display: flex;
+  gap: 8px;
+}
+
+.headerRight button {
+  background: #334155;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ================= AVATAR ================= */
 .profilePic {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  object-fit: cover;
 }
 
 .defaultAvatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #128c7e;
+  background: #475569;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   font-weight: bold;
 }
 
-.headerCenter {
+/* ================= CHAT WRAPPER ================= */
+.chatWrapper {
   flex: 1;
-  margin-left: 12px;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.headerRight {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.callBtn {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-/* CALL UI WRAPPER */
-.callContainer {
-  position: relative;
-}
-
-/* CHAT AREA */
+/* ================= CHAT AREA ================= */
 .chatArea {
   flex: 1;
   overflow-y: auto;
@@ -73,104 +91,194 @@
   flex-direction: column;
 }
 
-/* MESSAGE BUBBLES */
-.sent {
-  align-self: flex-end;
-  background-color: #dcf8c6;
-  padding: 8px 12px;
-  border-radius: 10px 0 10px 10px;
-  margin: 5px 0;
-  max-width: 70%;
-  word-wrap: break-word;
+/* SCROLLBAR (OPTIONAL) */
+.chatArea::-webkit-scrollbar {
+  width: 5px;
+}
+.chatArea::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
 }
 
+/* ================= MESSAGES ================= */
+.sent,
 .received {
-  align-self: flex-start;
-  background-color: white;
   padding: 8px 12px;
-  border-radius: 0 10px 10px 10px;
-  margin: 5px 0;
-  max-width: 70%;
+  margin: 4px 0;
+  border-radius: 12px;
+  max-width: 75%;
   word-wrap: break-word;
+  font-size: 14px;
 }
 
-/* INPUT AREA */
+/* SENT */
+.sent {
+  background: #22c55e;
+  align-self: flex-end;
+}
+
+/* RECEIVED */
+.received {
+  background: #334155;
+  align-self: flex-start;
+}
+
+/* ================= INPUT ================= */
 .inputArea {
+  flex-shrink: 0;
   padding: 10px;
-  background-color: #f0f0f0;
+  background: #1e293b;
+  border-top: 1px solid #334155;
 }
 
 .inputArea input {
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 20px;
+  padding: 10px 14px;
+  border-radius: 25px;
   border: none;
   outline: none;
   font-size: 14px;
 }
 
-/* ========================= */
-/* RESPONSIVE DESIGN */
-/* ========================= */
+/* ================= CALL POPUP ================= */
+.callOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
 
-/* MOBILE */
-@media (max-width: 600px) {
+.callPopup {
+  background: #1e293b;
+  padding: 25px 20px;
+  border-radius: 18px;
+  text-align: center;
+  width: 90%;
+  max-width: 320px;
+  animation: scaleIn 0.25s ease;
+}
+
+/* AVATAR */
+.callAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 12px;
+}
+
+.callAvatarFallback {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #475569;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: auto;
+  font-size: 26px;
+}
+
+/* TEXT */
+.callPopup h2 {
+  margin: 5px 0;
+  font-size: 18px;
+}
+
+.callPopup p {
+  color: #aaa;
+  font-size: 14px;
+}
+
+/* BUTTONS */
+.callActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.acceptBtn {
+  flex: 1;
+  background: #22c55e;
+  border: none;
+  padding: 10px;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.rejectBtn {
+  flex: 1;
+  background: red;
+  border: none;
+  padding: 10px;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ================= ANIMATION ================= */
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ================= RESPONSIVE ================= */
+
+/* 📱 MOBILE */
+@media (max-width: 480px) {
   .headerCenter {
     font-size: 14px;
-  }
-
-  .profilePic,
-  .defaultAvatar {
-    width: 35px;
-    height: 35px;
-  }
-
-  .callBtn {
-    font-size: 18px;
   }
 
   .sent,
   .received {
     max-width: 85%;
-    font-size: 14px;
+    font-size: 13px;
+  }
+
+  .inputArea input {
+    font-size: 13px;
+    padding: 9px 12px;
+  }
+
+  .headerRight button {
+    padding: 5px 8px;
   }
 }
 
-/* TABLET */
-@media (min-width: 601px) and (max-width: 1024px) {
-  .container {
-    max-width: 100%;
-  }
-
+/* 📲 TABLET */
+@media (min-width: 481px) and (max-width: 768px) {
   .sent,
   .received {
     max-width: 75%;
   }
 }
 
-/* DESKTOP */
-@media (min-width: 1025px) {
+/* 💻 LAPTOP */
+@media (min-width: 769px) {
   .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: auto;
-    height: 95vh;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  }
-
-  .sent,
-  .received {
-    max-width: 60%;
+    border-left: 1px solid #222;
+    border-right: 1px solid #222;
   }
 }
 
-/* SCROLLBAR */
-.chatArea::-webkit-scrollbar {
-  width: 5px;
-}
-
-.chatArea::-webkit-scrollbar-thumb {
-  background-color: #ccc;
-  border-radius: 10px;
+/* 🖥️ LARGE SCREEN */
+@media (min-width: 1200px) {
+  .container {
+    max-width: 1000px;
+  }
 }
