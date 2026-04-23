@@ -10,7 +10,7 @@ export default function useCall(roomId) {
   const [, forceUpdate] = useState(0);
 
   const [remoteStream, setRemoteStream] = useState(null);
-  const [incomingCall, setIncomingCall] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null); // {offer, type}
   const [callActive, setCallActive] = useState(false);
 
   /* =========================
@@ -28,37 +28,18 @@ export default function useCall(roomId) {
       ],
     });
 
-    // 🎥 REMOTE STREAM
     pc.ontrack = (event) => {
       const stream =
         event.streams?.[0] || new MediaStream([event.track]);
-
       setRemoteStream(stream);
     };
 
-    // ❄️ ICE
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         socket.emit("ice-candidate", {
           candidate: event.candidate,
           roomId,
         });
-      }
-    };
-
-    // 🔥 CONNECTION STATE (IMPORTANT FIX)
-    pc.onconnectionstatechange = () => {
-      console.log("STATE:", pc.connectionState);
-
-      if (
-        pc.connectionState === "disconnected" ||
-        pc.connectionState === "failed" ||
-        pc.connectionState === "closed"
-      ) {
-        console.log("❌ Connection lost");
-
-        socket.emit("peer-disconnected", { roomId });
-        cleanUp();
       }
     };
 
@@ -86,24 +67,26 @@ export default function useCall(roomId) {
       const offer = await peer.current.createOffer();
       await peer.current.setLocalDescription(offer);
 
-      socket.emit("call-user", { offer, roomId });
+      socket.emit("call-user", { offer, roomId, type });
 
       setCallActive(true);
       localStorage.setItem("activeCall", roomId);
     } catch (err) {
-      console.error("Start error:", err);
+      console.error(err);
     }
   };
 
   /* =========================
-     🔹 ACCEPT CALL
+     🔹 ACCEPT CALL (FIXED)
   ========================= */
-  const acceptCall = async (offer) => {
+  const acceptCall = async (data) => {
     try {
-      if (!offer) return;
+      if (!data) return;
+
+      const { offer, type } = data;
 
       localStream.current = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: type === "video",
         audio: true,
       });
 
@@ -130,7 +113,7 @@ export default function useCall(roomId) {
 
       localStorage.setItem("activeCall", roomId);
     } catch (err) {
-      console.error("Accept error:", err);
+      console.error(err);
     }
   };
 
@@ -150,7 +133,6 @@ export default function useCall(roomId) {
     pendingCandidates.current = [];
 
     localStorage.removeItem("activeCall");
-    localStorage.removeItem("reconnecting");
   };
 
   /* =========================
@@ -169,7 +151,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔹 SWITCH MEDIA
+     🔹 SWITCH MEDIA (FIXED)
   ========================= */
   const switchMedia = async (type) => {
     if (!peer.current) return;
@@ -187,67 +169,29 @@ export default function useCall(roomId) {
           (s) => s.track && s.track.kind === track.kind
         );
 
-        if (sender) sender.replaceTrack(track);
+        if (sender) {
+          sender.replaceTrack(track);
+        } else {
+          peer.current.addTrack(track, newStream); // 🔥 FIX
+        }
       });
 
       localStream.current?.getTracks().forEach((t) => t.stop());
       localStream.current = newStream;
 
-      forceUpdate((prev) => prev + 1);
+      forceUpdate((p) => p + 1);
     } catch (err) {
-      console.error("Switch error:", err);
+      console.error(err);
     }
   };
-
-  /* =========================
-     🔁 AUTO RECONNECT (AFTER REFRESH)
-  ========================= */
-  useEffect(() => {
-    const savedRoom = localStorage.getItem("activeCall");
-
-    if (savedRoom === roomId) {
-      localStorage.setItem("reconnecting", "true");
-      socket.emit("rejoin-call", { roomId });
-    }
-  }, [roomId]);
-
-  /* =========================
-     🔁 PEER DISCONNECT HANDLE
-  ========================= */
-  useEffect(() => {
-    socket.on("peer-disconnected", async () => {
-      console.log("🔄 Peer disconnected → restarting");
-
-      const savedRoom = localStorage.getItem("activeCall");
-
-      if (savedRoom === roomId) {
-        await startCall("video");
-      }
-    });
-
-    return () => socket.off("peer-disconnected");
-  }, []);
 
   /* =========================
      🔹 SOCKET EVENTS
   ========================= */
   useEffect(() => {
-    socket.on("incoming-call", async (data) => {
+    socket.on("incoming-call", (data) => {
       if (!data?.offer) return;
-
-      const isReconnect = localStorage.getItem("reconnecting");
-
-      // 🔥 AUTO ACCEPT (NO POPUP)
-      if (isReconnect === "true") {
-        console.log("⚡ Auto reconnect accept");
-
-        await acceptCall(data.offer);
-        localStorage.removeItem("reconnecting");
-        return;
-      }
-
-      // normal call
-      setIncomingCall(data.offer);
+      setIncomingCall(data); // store full object
     });
 
     socket.on("call-accepted", async (data) => {
