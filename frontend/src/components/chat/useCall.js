@@ -144,7 +144,10 @@ export default function useCall(roomId) {
     setIncomingCall(null);
     pendingCandidates.current = [];
 
-    socket.emit("end-call", { roomId });
+    // 🔥 prevent infinite loop
+    if (callActive) {
+      socket.emit("end-call", { roomId });
+    }
   };
 
   /* =========================
