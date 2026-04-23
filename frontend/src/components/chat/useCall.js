@@ -13,6 +13,23 @@ export default function useCall(roomId) {
   const [callActive, setCallActive] = useState(false);
 
   /* =========================
+     CLEANUP
+  ========================= */
+  const cleanUp = () => {
+    localStream.current?.getTracks().forEach((t) => t.stop());
+    localStream.current = null;
+
+    peer.current?.close();
+    peer.current = null;
+
+    setRemoteStream(null);
+    setIncomingCall(null);
+    setCallActive(false);
+
+    pendingCandidates.current = [];
+  };
+
+  /* =========================
      CREATE PEER
   ========================= */
   const createPeer = () => {
@@ -49,6 +66,8 @@ export default function useCall(roomId) {
      START CALL
   ========================= */
   const startCall = async (type = "video") => {
+    cleanUp();
+
     localStream.current = await navigator.mediaDevices.getUserMedia({
       video: type === "video",
       audio: true,
@@ -74,6 +93,8 @@ export default function useCall(roomId) {
   const acceptCall = async (data) => {
     const { offer, type } = data;
 
+    cleanUp();
+
     localStream.current = await navigator.mediaDevices.getUserMedia({
       video: type === "video",
       audio: true,
@@ -87,6 +108,12 @@ export default function useCall(roomId) {
 
     await peer.current.setRemoteDescription(offer);
 
+    // 🔥 APPLY PENDING ICE
+    for (let c of pendingCandidates.current) {
+      await peer.current.addIceCandidate(c);
+    }
+    pendingCandidates.current = [];
+
     const answer = await peer.current.createAnswer();
     await peer.current.setLocalDescription(answer);
 
@@ -97,7 +124,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     SWITCH MEDIA (FIXED)
+     SWITCH MEDIA
   ========================= */
   const switchMedia = async (type) => {
     if (!peer.current) return;
@@ -114,11 +141,8 @@ export default function useCall(roomId) {
         (s) => s.track && s.track.kind === track.kind
       );
 
-      if (sender) {
-        sender.replaceTrack(track);
-      } else {
-        peer.current.addTrack(track, newStream);
-      }
+      if (sender) sender.replaceTrack(track);
+      else peer.current.addTrack(track, newStream);
     });
 
     localStream.current?.getTracks().forEach((t) => t.stop());
@@ -131,6 +155,14 @@ export default function useCall(roomId) {
     await peer.current.setLocalDescription(offer);
 
     socket.emit("renegotiate", { offer, roomId });
+  };
+
+  /* =========================
+     END CALL
+  ========================= */
+  const endCall = () => {
+    socket.emit("end-call", { roomId });
+    cleanUp();
   };
 
   /* =========================
@@ -153,7 +185,6 @@ export default function useCall(roomId) {
       }
     });
 
-    // 🔥 HANDLE RENEGOTIATION
     socket.on("renegotiate", async ({ offer }) => {
       await peer.current.setRemoteDescription(offer);
 
@@ -167,12 +198,7 @@ export default function useCall(roomId) {
       await peer.current.setRemoteDescription(answer);
     });
 
-    socket.on("end-call", () => {
-      peer.current?.close();
-      peer.current = null;
-      setCallActive(false);
-      setRemoteStream(null);
-    });
+    socket.on("end-call", cleanUp);
 
     return () => {
       socket.off("incoming-call");
@@ -184,11 +210,26 @@ export default function useCall(roomId) {
     };
   }, []);
 
+  /* =========================
+     🔥 HANDLE REFRESH
+  ========================= */
+  useEffect(() => {
+    const handleUnload = () => {
+      socket.emit("end-call", { roomId });
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, []);
+
   return {
     startCall,
     acceptCall,
     switchMedia,
-    endCall: () => socket.emit("end-call", { roomId }),
+    endCall,
     localStream,
     remoteStream,
     incomingCall,

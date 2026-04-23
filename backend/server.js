@@ -61,9 +61,12 @@ app.use(cookieParser());
 ========================= */
 
 io.on("connection", (socket) => {
+  console.log("🔥 Connected:", socket.id);
 
+  /* JOIN ROOM */
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
+    socket.roomId = roomId; // 🔥 SAVE ROOM
   });
 
   /* CALL */
@@ -79,7 +82,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
-  /* 🔥 RENEGOTIATION */
+  /* 🔁 RENEGOTIATION */
   socket.on("renegotiate", ({ offer, roomId }) => {
     socket.to(roomId).emit("renegotiate", { offer });
   });
@@ -88,8 +91,18 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("renegotiate-answer", { answer });
   });
 
+  /* END CALL */
   socket.on("end-call", ({ roomId }) => {
     socket.to(roomId).emit("end-call");
+  });
+
+  /* 🔥 FIX: DISCONNECT HANDLING */
+  socket.on("disconnect", () => {
+    console.log("❌ Disconnected:", socket.id);
+
+    if (socket.roomId) {
+      socket.to(socket.roomId).emit("end-call");
+    }
   });
 });
 /* =========================
