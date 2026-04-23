@@ -37,6 +37,7 @@ const io = new Server(server, {
     origin: [
       "http://localhost:5174",
       "https://looptalk-gfr8.onrender.com",
+      
     ],
     credentials: true,
   },
@@ -52,7 +53,8 @@ const io = new Server(server, {
 app.use(cors({
   origin: [
     "http://localhost:5174",
-    "https://looptalk-gfr8.onrender.com" // <-- replace this
+    "https://looptalk-gfr8.onrender.com",
+    "http://192.168.29.203:5174",// <-- replace this
   ],
   credentials: true
 }));

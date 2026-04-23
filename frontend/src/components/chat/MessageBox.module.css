@@ -1,150 +1,251 @@
-/* CONTAINER */
-.container {
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: #0f172a;
+:global(html),
+:global(body),
+:global(#root) {
+  height: 100%;
+  margin: 0;
   overflow: hidden;
 }
 
-/* HEADER */
-.header {
+.container {
   position: fixed;
-  top: 0;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr) 64px;
   width: 100%;
-  height: 60px;
-  background: #1e293b;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 12px;
-  color: white;
-  z-index: 1000;
+  height: 100dvh;
+  background: #efeae2;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
 }
 
-/* PROFILE */
-.profilePic {
-  width: 40px;
-  height: 40px;
+/* pattern */
+.container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.header {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f0f2f5;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+}
+
+.profilePic,
+.defaultAvatar {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
+}
+
+.profilePic {
+  object-fit: cover;
 }
 
 .defaultAvatar {
-  width: 40px;
-  height: 40px;
-  background: #334155;
-  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #25d366;
+  color: #fff;
+  font-weight: 700;
+}
+
+.headerCenter {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111b21;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerRight {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
 }
 
-/* CHAT AREA */
-.chatArea {
-  position: absolute;
-  top: 60px;
-  bottom: 70px;
-  width: 100%;
-  overflow-y: auto;
-  padding: 10px;
-
-  display: flex;
-  flex-direction: column;
-}
-
-/* MESSAGE BASE */
-.message {
-  max-width: 70%;
-  padding: 10px 14px;
-  margin: 6px 0;
-  border-radius: 12px;
-  word-break: break-word;
-}
-
-/* SENT (RIGHT) */
-.sent {
-  align-self: flex-end;
-  background: #22c55e;
-  color: white;
-  border-bottom-right-radius: 4px;
-}
-
-/* RECEIVED (LEFT) */
-.received {
-  align-self: flex-start;
-  background: #334155;
-  color: white;
-  border-bottom-left-radius: 4px;
-}
-
-/* INPUT */
-.inputArea {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  display: flex;
-  gap: 10px;
-  padding: 10px;
-  background: #1e293b;
-  z-index: 1000;
-
-  padding-bottom: calc(env(safe-area-inset-bottom) + 10px);
-}
-
-/* INPUT FIELD */
-.inputArea input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 20px;
+.headerRight button {
+  width: 38px;
+  height: 38px;
   border: none;
-  outline: none;
-}
-
-/* SEND BUTTON */
-.sendBtn {
-  background: #22c55e;
-  border: none;
-  color: white;
-  padding: 10px 14px;
   border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #54656f;
+  font-size: 1.15rem;
   cursor: pointer;
 }
 
-/* CALL UI */
-.callOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.8);
+.chatArea {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 12px 10px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sent,
+.received {
+  max-width: 80%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  word-break: break-word;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.sent {
+  align-self: flex-end;
+  background: #d9fdd3;
+  color: #111b21;
+  border-top-right-radius: 2px;
+}
+
+.received {
+  align-self: flex-start;
+  background: #fff;
+  color: #111b21;
+  border-top-left-radius: 2px;
+}
+
+.inputArea {
+  position: relative;
+  z-index: 6;
+  display: flex;
   align-items: center;
-  z-index: 2000;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  background: #f0f2f5;
+  border-top: 1px solid #d9d9d9;
 }
 
-.callPopup {
-  background: #1e293b;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-  color: white;
+.inputArea input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: none;
+  outline: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: #fff;
+  font-size: 0.95rem;
+  color: #111b21;
 }
 
-.callActions {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 15px;
+.sendBtn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border: none;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  cursor: pointer;
 }
 
-.acceptBtn {
-  background: green;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 10px;
+@media (max-width: 768px) {
+  .container {
+    grid-template-rows: 60px minmax(0, 1fr) 60px;
+  }
+
+  .header {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .profilePic,
+  .defaultAvatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .sent,
+  .received {
+    max-width: 86%;
+  }
+
+  .inputArea input,
+  .sendBtn {
+    height: 42px;
+  }
+
+  .sendBtn {
+    width: 42px;
+    min-width: 42px;
+  }
 }
 
-.rejectBtn {
-  background: red;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 10px;
+@media (max-width: 480px) {
+  .container {
+    grid-template-rows: 56px minmax(0, 1fr) 56px;
+  }
+
+  .headerRight button {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .profilePic,
+  .defaultAvatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .headerCenter {
+    font-size: 0.92rem;
+  }
+
+  .chatArea {
+    padding: 10px 8px;
+  }
+
+  .sent,
+  .received {
+    max-width: 90%;
+    font-size: 0.9rem;
+  }
+
+  .inputArea {
+    padding: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .inputArea input,
+  .sendBtn {
+    height: 40px;
+  }
+
+  .sendBtn {
+    width: 40px;
+    min-width: 40px;
+  }
 }
