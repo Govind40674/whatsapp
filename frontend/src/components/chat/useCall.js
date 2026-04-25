@@ -10,11 +10,8 @@ export default function useCall(roomId) {
   const [incomingCall, setIncomingCall] = useState(null);
   const [callActive, setCallActive] = useState(false);
 
-  // 🔥 IMPORTANT (forces UI update)
-  const [localStreamVersion, setLocalStreamVersion] = useState(0);
-
   /* =========================
-     CREATE PEER
+     CREATE PEER (FIXED)
   ========================= */
   const createPeer = () => {
     const pc = new RTCPeerConnection({
@@ -22,6 +19,8 @@ export default function useCall(roomId) {
     });
 
     pc.ontrack = (e) => {
+      console.log("📡 Remote stream received");
+
       if (e.streams && e.streams[0]) {
         setRemoteStream(e.streams[0]);
       } else {
@@ -31,7 +30,24 @@ export default function useCall(roomId) {
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
-        socket.emit("ice-candidate", { candidate: e.candidate, roomId });
+        socket.emit("ice-candidate", {
+          candidate: e.candidate,
+          roomId,
+        });
+      }
+    };
+
+    /* 🔥 KEY FIX: AUTO NEGOTIATION */
+    pc.onnegotiationneeded = async () => {
+      try {
+        if (!pc) return;
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        socket.emit("renegotiate", { offer, roomId });
+      } catch (err) {
+        console.error("Negotiation error:", err);
       }
     };
 
@@ -39,106 +55,119 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     START CALL
+     START CALL (FINAL FIX)
   ========================= */
   const startCall = async (type = "video") => {
-    cleanUp();
+    try {
+      cleanUp();
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: type === "video",
-      audio: true,
-    });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video",
+        audio: true,
+      });
 
-    localStream.current = stream;
-    setLocalStreamVersion((v) => v + 1); // 🔥 trigger UI
+      localStream.current = stream;
+      peer.current = createPeer();
 
-    peer.current = createPeer();
+      stream.getTracks().forEach((track) => {
+        peer.current.addTrack(track, stream);
+      });
 
-    stream.getTracks().forEach((track) => {
-      peer.current.addTrack(track, stream);
-    });
+      // 🔥 important delay
+      await new Promise((r) => setTimeout(r, 500));
 
-    await new Promise((r) => setTimeout(r, 300));
+      const offer = await peer.current.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
 
-    const offer = await peer.current.createOffer();
-    await peer.current.setLocalDescription(offer);
+      await peer.current.setLocalDescription(offer);
 
-    socket.emit("call-user", { offer, roomId, type });
+      socket.emit("call-user", { offer, roomId, type });
 
-    setCallActive(true);
-    localStorage.setItem("activeCall", roomId);
+      setCallActive(true);
+      localStorage.setItem("activeCall", roomId);
+
+    } catch (err) {
+      console.error("Start error:", err);
+    }
   };
 
   /* =========================
      ACCEPT CALL
   ========================= */
   const acceptCall = async (data) => {
-    if (callActive) return;
+    try {
+      if (callActive) return;
 
-    const { offer, type } = data;
+      const { offer, type } = data;
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: type === "video",
-      audio: true,
-    });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video",
+        audio: true,
+      });
 
-    localStream.current = stream;
-    setLocalStreamVersion((v) => v + 1); // 🔥 trigger UI
+      localStream.current = stream;
+      peer.current = createPeer();
 
-    peer.current = createPeer();
+      stream.getTracks().forEach((track) => {
+        peer.current.addTrack(track, stream);
+      });
 
-    stream.getTracks().forEach((track) => {
-      peer.current.addTrack(track, stream);
-    });
+      await peer.current.setRemoteDescription(offer);
 
-    await peer.current.setRemoteDescription(offer);
+      for (let c of pendingCandidates.current) {
+        await peer.current.addIceCandidate(c);
+      }
+      pendingCandidates.current = [];
 
-    for (let c of pendingCandidates.current) {
-      await peer.current.addIceCandidate(c);
+      const answer = await peer.current.createAnswer();
+      await peer.current.setLocalDescription(answer);
+
+      socket.emit("answer-call", { answer, roomId });
+
+      setIncomingCall(null);
+      setCallActive(true);
+
+      localStorage.setItem("activeCall", roomId);
+
+    } catch (err) {
+      console.error("Accept error:", err);
     }
-    pendingCandidates.current = [];
-
-    const answer = await peer.current.createAnswer();
-    await peer.current.setLocalDescription(answer);
-
-    socket.emit("answer-call", { answer, roomId });
-
-    setIncomingCall(null);
-    setCallActive(true);
-
-    localStorage.setItem("activeCall", roomId);
   };
 
   /* =========================
-     🔥 SWITCH MEDIA (FINAL FIX)
+     SWITCH MEDIA (FINAL FIX)
   ========================= */
   const switchMedia = async (type) => {
-    if (!peer.current) return;
+    try {
+      if (!peer.current) return;
 
-    const newStream = await navigator.mediaDevices.getUserMedia({
-      video: type === "video",
-      audio: true,
-    });
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video",
+        audio: true,
+      });
 
-    const senders = peer.current.getSenders();
+      const senders = peer.current.getSenders();
 
-    newStream.getTracks().forEach((track) => {
-      const sender = senders.find(
-        (s) => s.track && s.track.kind === track.kind
-      );
+      newStream.getTracks().forEach((track) => {
+        const sender = senders.find(
+          (s) => s.track && s.track.kind === track.kind
+        );
 
-      if (sender) sender.replaceTrack(track);
-      else peer.current.addTrack(track, newStream);
-    });
+        if (sender) {
+          sender.replaceTrack(track);
+        } else {
+          peer.current.addTrack(track, newStream);
+        }
+      });
 
-    // 🔥 STOP OLD STREAM
-    localStream.current?.getTracks().forEach((t) => t.stop());
+      localStream.current?.getTracks().forEach((t) => t.stop());
+      localStream.current = newStream;
 
-    // 🔥 UPDATE STREAM
-    localStream.current = newStream;
-
-    // 🔥 FORCE UI UPDATE
-    setLocalStreamVersion((v) => v + 1);
+    } catch (err) {
+      console.error("Switch error:", err);
+    }
   };
 
   /* =========================
@@ -163,6 +192,17 @@ export default function useCall(roomId) {
     cleanUp();
     socket.emit("end-call", { roomId });
   };
+
+  /* =========================
+     AUTO REJOIN
+  ========================= */
+  useEffect(() => {
+    const saved = localStorage.getItem("activeCall");
+
+    if (saved === roomId) {
+      socket.emit("rejoin-call", { roomId });
+    }
+  }, [roomId]);
 
   /* =========================
      SOCKET EVENTS
@@ -193,12 +233,40 @@ export default function useCall(roomId) {
       }
     });
 
+    socket.on("renegotiate", async ({ offer }) => {
+      if (!peer.current) return;
+
+      await peer.current.setRemoteDescription(offer);
+
+      const answer = await peer.current.createAnswer();
+      await peer.current.setLocalDescription(answer);
+
+      socket.emit("renegotiate-answer", { answer, roomId });
+    });
+
+    socket.on("renegotiate-answer", async ({ answer }) => {
+      if (!peer.current) return;
+      await peer.current.setRemoteDescription(answer);
+    });
+
+    socket.on("user-rejoined", async () => {
+      if (!peer.current) return;
+
+      const offer = await peer.current.createOffer();
+      await peer.current.setLocalDescription(offer);
+
+      socket.emit("call-user", { offer, roomId, type: "video" });
+    });
+
     socket.on("end-call", cleanUp);
 
     return () => {
       socket.off("incoming-call");
       socket.off("call-accepted");
       socket.off("ice-candidate");
+      socket.off("renegotiate");
+      socket.off("renegotiate-answer");
+      socket.off("user-rejoined");
       socket.off("end-call");
     };
   }, []);
@@ -212,6 +280,5 @@ export default function useCall(roomId) {
     remoteStream,
     incomingCall,
     callActive,
-    localStreamVersion, // 🔥 important
   };
 }
