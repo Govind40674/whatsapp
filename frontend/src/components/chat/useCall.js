@@ -19,15 +19,22 @@ export default function useCall(roomId) {
     });
 
     pc.ontrack = (e) => {
+      console.log("📡 Remote track received");
+
       if (e.streams && e.streams[0]) {
-        console.log("📡 Remote stream received");
         setRemoteStream(e.streams[0]);
+      } else {
+        const stream = new MediaStream([e.track]);
+        setRemoteStream(stream);
       }
     };
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
-        socket.emit("ice-candidate", { candidate: e.candidate, roomId });
+        socket.emit("ice-candidate", {
+          candidate: e.candidate,
+          roomId,
+        });
       }
     };
 
@@ -35,65 +42,79 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     START CALL
+     START CALL (FIXED)
   ========================= */
   const startCall = async (type = "video") => {
-    await cleanUp();
+    try {
+      cleanUp();
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: type === "video",
-      audio: true,
-    });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video",
+        audio: true,
+      });
 
-    localStream.current = stream;
-    peer.current = createPeer();
+      localStream.current = stream;
+      peer.current = createPeer();
 
-    stream.getTracks().forEach((track) => {
-      peer.current.addTrack(track, stream);
-    });
+      // 🔥 ADD TRACKS FIRST
+      stream.getTracks().forEach((track) => {
+        peer.current.addTrack(track, stream);
+      });
 
-    const offer = await peer.current.createOffer();
-    await peer.current.setLocalDescription(offer);
+      // 🔥 WAIT BEFORE OFFER (VERY IMPORTANT)
+      await new Promise((r) => setTimeout(r, 300));
 
-    socket.emit("call-user", { offer, roomId, type });
+      const offer = await peer.current.createOffer();
+      await peer.current.setLocalDescription(offer);
 
-    setCallActive(true);
-    localStorage.setItem("activeCall", roomId);
+      socket.emit("call-user", { offer, roomId, type });
+
+      setCallActive(true);
+      localStorage.setItem("activeCall", roomId);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   /* =========================
-     ACCEPT CALL
+     ACCEPT CALL (FIXED)
   ========================= */
   const acceptCall = async (data) => {
-    const { offer, type } = data;
+    try {
+      const { offer, type } = data;
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: type === "video",
-      audio: true,
-    });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: type === "video",
+        audio: true,
+      });
 
-    localStream.current = stream;
-    peer.current = createPeer();
+      localStream.current = stream;
+      peer.current = createPeer();
 
-    stream.getTracks().forEach((track) => {
-      peer.current.addTrack(track, stream);
-    });
+      stream.getTracks().forEach((track) => {
+        peer.current.addTrack(track, stream);
+      });
 
-    await peer.current.setRemoteDescription(offer);
+      await peer.current.setRemoteDescription(offer);
 
-    for (let c of pendingCandidates.current) {
-      await peer.current.addIceCandidate(c);
+      // 🔥 APPLY PENDING ICE
+      for (let c of pendingCandidates.current) {
+        await peer.current.addIceCandidate(c);
+      }
+      pendingCandidates.current = [];
+
+      const answer = await peer.current.createAnswer();
+      await peer.current.setLocalDescription(answer);
+
+      socket.emit("answer-call", { answer, roomId });
+
+      setIncomingCall(null);
+      setCallActive(true);
+
+      localStorage.setItem("activeCall", roomId);
+    } catch (err) {
+      console.error(err);
     }
-    pendingCandidates.current = [];
-
-    const answer = await peer.current.createAnswer();
-    await peer.current.setLocalDescription(answer);
-
-    socket.emit("answer-call", { answer, roomId });
-
-    setIncomingCall(null);
-    setCallActive(true);
-    localStorage.setItem("activeCall", roomId);
   };
 
   /* =========================
@@ -120,12 +141,12 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔁 AUTO RECONNECT
+     🔥 AUTO REJOIN
   ========================= */
   useEffect(() => {
-    const savedRoom = localStorage.getItem("activeCall");
+    const saved = localStorage.getItem("activeCall");
 
-    if (savedRoom === roomId) {
+    if (saved === roomId) {
       console.log("🔁 Rejoining call...");
       socket.emit("rejoin-call", { roomId });
     }
@@ -135,19 +156,7 @@ export default function useCall(roomId) {
      SOCKET EVENTS
   ========================= */
   useEffect(() => {
-    /* 🔥 AUTO ACCEPT FIX */
-    socket.on("incoming-call", async (data) => {
-      const savedRoom = localStorage.getItem("activeCall");
-
-      // ✅ If reconnect → auto accept
-      if (savedRoom === roomId) {
-        console.log("⚡ Auto reconnect → accepting call");
-
-        await acceptCall(data);
-        return;
-      }
-
-      // 🟢 Normal call
+    socket.on("incoming-call", (data) => {
       setIncomingCall(data);
     });
 
@@ -166,16 +175,20 @@ export default function useCall(roomId) {
       }
     });
 
-    /* 🔥 OTHER USER REFRESH */
+    /* 🔥 KEY FIX */
     socket.on("user-rejoined", async () => {
-      console.log("♻️ Other user refreshed → re-offer");
+      console.log("♻️ Recreating offer");
 
       if (!peer.current) return;
 
       const offer = await peer.current.createOffer();
       await peer.current.setLocalDescription(offer);
 
-      socket.emit("call-user", { offer, roomId, type: "video" });
+      socket.emit("call-user", {
+        offer,
+        roomId,
+        type: "video",
+      });
     });
 
     socket.on("end-call", cleanUp);
