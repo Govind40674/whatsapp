@@ -14,8 +14,35 @@ export default function useCall(roomId) {
      CREATE PEER (FIXED)
   ========================= */
   const createPeer = () => {
+    // const pc = new RTCPeerConnection({
+    //   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    // });
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      iceServers: [
+        {
+          urls: "stun:stun.relay.metered.ca:80",
+        },
+        {
+          urls: "turn:global.relay.metered.ca:80",
+          username: "06233b956b58f15417080948",
+          credential: "SNcVJO2SbmlqNjHz",
+        },
+        {
+          urls: "turn:global.relay.metered.ca:80?transport=tcp",
+          username: "06233b956b58f15417080948",
+          credential: "SNcVJO2SbmlqNjHz",
+        },
+        {
+          urls: "turn:global.relay.metered.ca:443",
+          username: "06233b956b58f15417080948",
+          credential: "SNcVJO2SbmlqNjHz",
+        },
+        {
+          urls: "turns:global.relay.metered.ca:443?transport=tcp",
+          username: "06233b956b58f15417080948",
+          credential: "SNcVJO2SbmlqNjHz",
+        },
+      ],
     });
 
     pc.ontrack = (e) => {
@@ -87,7 +114,6 @@ export default function useCall(roomId) {
 
       setCallActive(true);
       localStorage.setItem("activeCall", roomId);
-
     } catch (err) {
       console.error("Start error:", err);
     }
@@ -130,7 +156,6 @@ export default function useCall(roomId) {
       setCallActive(true);
 
       localStorage.setItem("activeCall", roomId);
-
     } catch (err) {
       console.error("Accept error:", err);
     }
@@ -152,7 +177,7 @@ export default function useCall(roomId) {
 
       newStream.getTracks().forEach((track) => {
         const sender = senders.find(
-          (s) => s.track && s.track.kind === track.kind
+          (s) => s.track && s.track.kind === track.kind,
         );
 
         if (sender) {
@@ -164,7 +189,6 @@ export default function useCall(roomId) {
 
       localStream.current?.getTracks().forEach((t) => t.stop());
       localStream.current = newStream;
-
     } catch (err) {
       console.error("Switch error:", err);
     }
