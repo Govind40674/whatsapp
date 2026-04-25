@@ -59,14 +59,21 @@ app.use(cookieParser());
 /* =========================
    🔥 SOCKET.IO LOGIC
 ========================= */
-
 io.on("connection", (socket) => {
 
+  console.log("🔥 Connected:", socket.id);
+
+  /* =========================
+     JOIN ROOM
+  ========================= */
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
     socket.roomId = roomId;
   });
 
+  /* =========================
+     CALL SYSTEM
+  ========================= */
   socket.on("call-user", ({ offer, roomId, type }) => {
     socket.to(roomId).emit("incoming-call", { offer, type });
   });
@@ -79,6 +86,9 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
+  /* =========================
+     RENEGOTIATION
+  ========================= */
   socket.on("renegotiate", ({ offer, roomId }) => {
     socket.to(roomId).emit("renegotiate", { offer });
   });
@@ -87,16 +97,41 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("renegotiate-answer", { answer });
   });
 
+  /* =========================
+     END CALL
+  ========================= */
   socket.on("end-call", ({ roomId }) => {
     socket.to(roomId).emit("end-call");
   });
 
-  // 🔥 FIX REFRESH PROBLEM
+  /* =========================
+     🔥 SMART DISCONNECT HANDLING
+  ========================= */
   socket.on("disconnect", () => {
-    if (socket.roomId) {
-      socket.to(socket.roomId).emit("end-call");
-    }
+    console.log("❌ Disconnected:", socket.id);
+
+    if (!socket.roomId) return;
+
+    const roomId = socket.roomId;
+
+    // ⏳ WAIT BEFORE ENDING CALL (handles refresh)
+    setTimeout(() => {
+      const room = io.sockets.adapter.rooms.get(roomId);
+
+      // If no one else is in room → skip
+      if (!room) return;
+
+      // If only 1 user left → other user really left
+      if (room.size < 2) {
+        console.log("📴 Ending call (user left)");
+
+        socket.to(roomId).emit("end-call");
+      } else {
+        console.log("♻️ User reconnected, keep call alive");
+      }
+    }, 3000); // 🔥 3 sec delay (important)
   });
+
 });
 /* =========================
    🔹 FETCH MESSAGES
