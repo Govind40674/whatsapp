@@ -58,7 +58,6 @@ export default function useCall(roomId) {
     socket.emit("call-user", { offer, roomId, type });
 
     setCallActive(true);
-
     localStorage.setItem("activeCall", roomId);
   };
 
@@ -94,7 +93,6 @@ export default function useCall(roomId) {
 
     setIncomingCall(null);
     setCallActive(true);
-
     localStorage.setItem("activeCall", roomId);
   };
 
@@ -122,7 +120,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔥 AUTO RECONNECT (FIXED)
+     🔁 AUTO RECONNECT
   ========================= */
   useEffect(() => {
     const savedRoom = localStorage.getItem("activeCall");
@@ -137,7 +135,19 @@ export default function useCall(roomId) {
      SOCKET EVENTS
   ========================= */
   useEffect(() => {
-    socket.on("incoming-call", (data) => {
+    /* 🔥 AUTO ACCEPT FIX */
+    socket.on("incoming-call", async (data) => {
+      const savedRoom = localStorage.getItem("activeCall");
+
+      // ✅ If reconnect → auto accept
+      if (savedRoom === roomId) {
+        console.log("⚡ Auto reconnect → accepting call");
+
+        await acceptCall(data);
+        return;
+      }
+
+      // 🟢 Normal call
       setIncomingCall(data);
     });
 
@@ -156,7 +166,7 @@ export default function useCall(roomId) {
       }
     });
 
-    /* 🔥 KEY FIX */
+    /* 🔥 OTHER USER REFRESH */
     socket.on("user-rejoined", async () => {
       console.log("♻️ Other user refreshed → re-offer");
 
