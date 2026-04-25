@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-function CallUI({ localStream, remoteStream, switchMedia, endCall }) {
+function CallUI({ localStream, remoteStream, switchMedia, endCall, localStreamVersion }) {
   const localVideo = useRef(null);
   const remoteVideo = useRef(null);
 
@@ -8,7 +8,7 @@ function CallUI({ localStream, remoteStream, switchMedia, endCall }) {
     if (localVideo.current && localStream?.current) {
       localVideo.current.srcObject = localStream.current;
     }
-  }, [localStream]);
+  }, [localStreamVersion]); // 🔥 KEY FIX
 
   useEffect(() => {
     if (remoteVideo.current && remoteStream) {
@@ -18,16 +18,11 @@ function CallUI({ localStream, remoteStream, switchMedia, endCall }) {
 
   return (
     <div style={styles.container}>
-      {/* REMOTE VIDEO */}
-      <video
-        ref={remoteVideo}
-        autoPlay
-        playsInline
-        style={styles.remoteVideo}
-      />
+      <video ref={remoteVideo} autoPlay playsInline style={styles.remoteVideo} />
 
-      {/* LOCAL VIDEO */}
+      {/* 🔥 key forces re-render */}
       <video
+        key={localStreamVersion}
         ref={localVideo}
         autoPlay
         muted
@@ -35,7 +30,6 @@ function CallUI({ localStream, remoteStream, switchMedia, endCall }) {
         style={styles.localVideo}
       />
 
-      {/* CONTROLS */}
       <div style={styles.controls}>
         <button onClick={() => switchMedia("audio")} style={styles.btn}>
           🎤
@@ -74,7 +68,6 @@ const styles = {
     borderRadius: "12px",
     border: "2px solid white",
     objectFit: "cover",
-    backgroundColor: "#000",
   },
   controls: {
     position: "absolute",
@@ -85,19 +78,15 @@ const styles = {
     gap: "20px",
   },
   btn: {
-    padding: "10px 15px",
-    fontSize: "18px",
+    padding: "10px",
     borderRadius: "50%",
-    border: "none",
     cursor: "pointer",
   },
   endBtn: {
-    padding: "10px 18px",
-    fontSize: "16px",
-    borderRadius: "20px",
-    border: "none",
     backgroundColor: "red",
     color: "white",
+    padding: "10px 20px",
+    borderRadius: "20px",
     cursor: "pointer",
   },
 };
