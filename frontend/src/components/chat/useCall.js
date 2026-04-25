@@ -11,7 +11,7 @@ export default function useCall(roomId) {
   const [callActive, setCallActive] = useState(false);
 
   /* =========================
-     CREATE PEER
+     CREATE PEER (FIXED)
   ========================= */
   const createPeer = () => {
     const pc = new RTCPeerConnection({
@@ -19,6 +19,8 @@ export default function useCall(roomId) {
     });
 
     pc.ontrack = (e) => {
+      console.log("📡 Remote stream received");
+
       if (e.streams && e.streams[0]) {
         setRemoteStream(e.streams[0]);
       } else {
@@ -35,11 +37,25 @@ export default function useCall(roomId) {
       }
     };
 
+    /* 🔥 KEY FIX: AUTO NEGOTIATION */
+    pc.onnegotiationneeded = async () => {
+      try {
+        if (!pc) return;
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        socket.emit("renegotiate", { offer, roomId });
+      } catch (err) {
+        console.error("Negotiation error:", err);
+      }
+    };
+
     return pc;
   };
 
   /* =========================
-     START CALL
+     START CALL (FINAL FIX)
   ========================= */
   const startCall = async (type = "video") => {
     try {
@@ -57,17 +73,23 @@ export default function useCall(roomId) {
         peer.current.addTrack(track, stream);
       });
 
-      await new Promise((r) => setTimeout(r, 300));
+      // 🔥 important delay
+      await new Promise((r) => setTimeout(r, 500));
 
-      const offer = await peer.current.createOffer();
+      const offer = await peer.current.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
+
       await peer.current.setLocalDescription(offer);
 
       socket.emit("call-user", { offer, roomId, type });
 
       setCallActive(true);
       localStorage.setItem("activeCall", roomId);
+
     } catch (err) {
-      console.error(err);
+      console.error("Start error:", err);
     }
   };
 
@@ -108,13 +130,14 @@ export default function useCall(roomId) {
       setCallActive(true);
 
       localStorage.setItem("activeCall", roomId);
+
     } catch (err) {
-      console.error(err);
+      console.error("Accept error:", err);
     }
   };
 
   /* =========================
-     🔥 SWITCH MEDIA (FULL FIX)
+     SWITCH MEDIA (FINAL FIX)
   ========================= */
   const switchMedia = async (type) => {
     try {
@@ -142,14 +165,8 @@ export default function useCall(roomId) {
       localStream.current?.getTracks().forEach((t) => t.stop());
       localStream.current = newStream;
 
-      /* 🔥 IMPORTANT: RENEGOTIATION */
-      const offer = await peer.current.createOffer();
-      await peer.current.setLocalDescription(offer);
-
-      socket.emit("renegotiate", { offer, roomId });
-
     } catch (err) {
-      console.error("Switch media error:", err);
+      console.error("Switch error:", err);
     }
   };
 
@@ -216,7 +233,6 @@ export default function useCall(roomId) {
       }
     });
 
-    /* 🔥 RENEGOTIATION RECEIVE */
     socket.on("renegotiate", async ({ offer }) => {
       if (!peer.current) return;
 
