@@ -24,8 +24,7 @@ export default function useCall(roomId) {
       if (e.streams && e.streams[0]) {
         setRemoteStream(e.streams[0]);
       } else {
-        const stream = new MediaStream([e.track]);
-        setRemoteStream(stream);
+        setRemoteStream(new MediaStream([e.track]));
       }
     };
 
@@ -42,7 +41,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     START CALL (FIXED)
+     START CALL
   ========================= */
   const startCall = async (type = "video") => {
     try {
@@ -56,13 +55,11 @@ export default function useCall(roomId) {
       localStream.current = stream;
       peer.current = createPeer();
 
-      // 🔥 ADD TRACKS FIRST
       stream.getTracks().forEach((track) => {
         peer.current.addTrack(track, stream);
       });
 
-      // 🔥 WAIT BEFORE OFFER (VERY IMPORTANT)
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 300)); // 🔥 important
 
       const offer = await peer.current.createOffer();
       await peer.current.setLocalDescription(offer);
@@ -77,10 +74,12 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     ACCEPT CALL (FIXED)
+     ACCEPT CALL (SAFE)
   ========================= */
   const acceptCall = async (data) => {
     try {
+      if (callActive) return; // 🔥 prevent double accept
+
       const { offer, type } = data;
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -97,7 +96,6 @@ export default function useCall(roomId) {
 
       await peer.current.setRemoteDescription(offer);
 
-      // 🔥 APPLY PENDING ICE
       for (let c of pendingCandidates.current) {
         await peer.current.addIceCandidate(c);
       }
@@ -141,7 +139,7 @@ export default function useCall(roomId) {
   };
 
   /* =========================
-     🔥 AUTO REJOIN
+     AUTO REJOIN
   ========================= */
   useEffect(() => {
     const saved = localStorage.getItem("activeCall");
@@ -153,11 +151,20 @@ export default function useCall(roomId) {
   }, [roomId]);
 
   /* =========================
-     SOCKET EVENTS
+     SOCKET EVENTS (FINAL FIX)
   ========================= */
   useEffect(() => {
-    socket.on("incoming-call", (data) => {
-      setIncomingCall(data);
+    socket.on("incoming-call", async (data) => {
+      const saved = localStorage.getItem("activeCall");
+
+      // 🔥 AUTO ACCEPT AFTER REFRESH
+      if (saved === roomId) {
+        console.log("♻️ Auto accepting reconnect call");
+        await acceptCall(data);
+      } else {
+        // 🆕 normal call
+        setIncomingCall(data);
+      }
     });
 
     socket.on("call-accepted", async ({ answer }) => {
@@ -175,7 +182,6 @@ export default function useCall(roomId) {
       }
     });
 
-    /* 🔥 KEY FIX */
     socket.on("user-rejoined", async () => {
       console.log("♻️ Recreating offer");
 
