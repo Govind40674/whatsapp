@@ -23,13 +23,7 @@ import Message from "./Schema/message.js";
 const app = express();
 const server = http.createServer(app);
 
-// 🔹 Socket setup
-// const io = new Server(server, {
-//   cors: {
-//     origin: true,
-//     credentials: true,
-//   },
-// });
+
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:5174", "https://looptalk-gfr8.onrender.com"],
@@ -39,8 +33,7 @@ const io = new Server(server, {
   transports: ["websocket", "polling"],
 });
 
-// 🔹 Middleware
-// app.use(cors({ origin: true, credentials: true }));
+
 
 app.use(
   cors({
@@ -60,7 +53,6 @@ app.use(cookieParser());
    🔥 SOCKET.IO LOGIC
 ========================= */
 io.on("connection", (socket) => {
-
   console.log("🔥 Connected:", socket.id);
 
   /* =========================
@@ -87,7 +79,7 @@ io.on("connection", (socket) => {
   });
 
   /* =========================
-     RENEGOTIATION
+     🔁 RENEGOTIATION
   ========================= */
   socket.on("renegotiate", ({ offer, roomId }) => {
     socket.to(roomId).emit("renegotiate", { offer });
@@ -98,6 +90,19 @@ io.on("connection", (socket) => {
   });
 
   /* =========================
+     🔁 REJOIN AFTER REFRESH (KEY FIX)
+  ========================= */
+  socket.on("rejoin-call", ({ roomId }) => {
+    console.log("♻️ User rejoined:", roomId);
+
+    socket.join(roomId);
+    socket.roomId = roomId;
+
+    // 🔥 Tell other user to recreate offer
+    socket.to(roomId).emit("user-rejoined");
+  });
+
+  /* =========================
      END CALL
   ========================= */
   socket.on("end-call", ({ roomId }) => {
@@ -105,33 +110,30 @@ io.on("connection", (socket) => {
   });
 
   /* =========================
-     🔥 SMART DISCONNECT HANDLING
+     🔥 SMART DISCONNECT (FIXED)
   ========================= */
   socket.on("disconnect", () => {
     console.log("❌ Disconnected:", socket.id);
 
-    if (!socket.roomId) return;
-
     const roomId = socket.roomId;
+    if (!roomId) return;
 
-    // ⏳ WAIT BEFORE ENDING CALL (handles refresh)
+    // wait to check if it's refresh or actual leave
     setTimeout(() => {
       const room = io.sockets.adapter.rooms.get(roomId);
 
-      // If no one else is in room → skip
+      // ❌ No room → nothing to do
       if (!room) return;
 
-      // If only 1 user left → other user really left
-      if (room.size < 2) {
-        console.log("📴 Ending call (user left)");
-
+      // 🔥 If only one user remains → real disconnect
+      if (room.size === 1) {
+        console.log("📴 Real disconnect → ending call");
         socket.to(roomId).emit("end-call");
-      } else {
-        console.log("♻️ User reconnected, keep call alive");
       }
-    }, 3000); // 🔥 3 sec delay (important)
-  });
 
+      // 🔁 If 2 users again → refresh happened → do nothing
+    }, 2000); // 2 sec delay is enough
+  });
 });
 /* =========================
    🔹 FETCH MESSAGES
