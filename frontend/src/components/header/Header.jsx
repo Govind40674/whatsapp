@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaEllipsisV } from "react-icons/fa";
-import {socket} from "../../chat/socket"
+import { socket } from "../chat/socket"
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
