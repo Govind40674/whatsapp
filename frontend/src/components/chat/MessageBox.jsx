@@ -166,7 +166,7 @@ function MessageBox() {
           )}
         </div>
 
-        <div className={styles.headerCenter}>{chattingWith.name || "User"}</div>
+        {/* <div className={styles.headerCenter}>{chattingWith.name || "User"}</div> */}
 
         <div className={styles.headerCenterWrapper}>
           <div className={styles.headerCenter}>
