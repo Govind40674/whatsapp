@@ -2,14 +2,22 @@ import React, { useEffect } from "react";
 import styles from "./Member.module.css";
 import useFetchMembers from "./useFetchMembers";
 import { useNavigate } from "react-router-dom";
+import {useContext} from "react";
+import { MyContext } from "../create_context/MyContext";
+
+
+
 
 function Member() {
+  // const myemail = localStorage.getItem("email");
+  const {onlineusers} = useContext(MyContext);
   const { member, fetchMember } = useFetchMembers();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchMember();
   }, [fetchMember]);
+
 
   const handleClick = (email) => {
     navigate(`/chat/${email}`);
@@ -34,6 +42,9 @@ function Member() {
 
             <div className={styles.right}>
               <div className={styles.name}>{m.name}</div>
+            </div>
+            <div className={styles.dot}>
+              {onlineusers.includes(m.email) && <div className={styles.dotOnline}></div>}
             </div>
           </div>
         ))

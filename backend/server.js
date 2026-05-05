@@ -134,6 +134,17 @@ io.on("connection", (socket) => {
       // 🔁 If 2 users again → refresh happened → do nothing
     }, 2000); // 2 sec delay is enough
   });
+  socket.on("user_online",  (email) => {
+    
+    socket.broadcast.emit("onlineusers", { email });
+
+  });
+
+  socket.on("user_offline", (email) => {
+    socket.broadcast.emit("offlineusers", { email });
+  });
+
+
 });
 /* =========================
    🔹 FETCH MESSAGES
