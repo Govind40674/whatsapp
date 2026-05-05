@@ -10,6 +10,7 @@ const Friend_request = React.lazy(() => import("../friend_request/Friend_request
 const Friend_request_lists = React.lazy(() => import("../friend_request_lists/Friend_request_lists"));
 const Profile= React.lazy(() => import("../profile/Profile"));
 const Edit_profile= React.lazy(() => import("../edit_profile/Edit_profile"));
+const Not_Found = React.lazy(() => import("../Not_found/Not_Found"));
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
@@ -18,7 +19,7 @@ function ProtectedRoute({ children }) {
 
 function PublicRoute({ children }) {
   const token = localStorage.getItem("token");
-  return token ? <Navigate to="/home" replace /> : children;
+  return token ? <Navigate to="/" replace /> : children;
 }
 
 function Router() {
@@ -84,6 +85,13 @@ function Router() {
           <Route path="/edit-profile" element={
             <ProtectedRoute>
               <Edit_profile />
+            </ProtectedRoute>
+          } />
+
+          {/* Not Found */}
+          <Route path="*" element={
+            <ProtectedRoute>
+              <Not_Found />
             </ProtectedRoute>
           } />
          

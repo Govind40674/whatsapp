@@ -1,0 +1,98 @@
+/* 🔹 Full screen center */
+.container {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #f9fafb, #e5e7eb);
+  text-align: center;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+/* 🔥 404 heading */
+.container h1 {
+  font-size: 6rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+/* 📄 text */
+.container p {
+  font-size: 1.2rem;
+  color: #6b7280;
+  margin: 10px 0 20px;
+}
+
+/* 🔘 buttons container */
+.container button {
+  margin: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 🔙 Go Back button */
+.container button:first-of-type {
+  background: #9ca3af;
+  color: white;
+}
+
+.container button:first-of-type:hover {
+  background: #6b7280;
+}
+
+/* 🏠 Go Home button */
+.container button:last-of-type {
+  background: #22c55e;
+  color: white;
+}
+
+.container button:last-of-type:hover {
+  background: #16a34a;
+}
+
+/* =========================
+   📱 MOBILE
+========================= */
+@media (max-width: 480px) {
+  .container h1 {
+    font-size: 4rem;
+  }
+
+  .container p {
+    font-size: 1rem;
+  }
+
+  .container button {
+    width: 100%;
+    max-width: 220px;
+  }
+}
+
+/* =========================
+   📱 TABLET
+========================= */
+@media (min-width: 481px) and (max-width: 768px) {
+  .container h1 {
+    font-size: 5rem;
+  }
+}
+
+/* =========================
+   💻 DESKTOP
+========================= */
+@media (min-width: 769px) {
+  .container {
+    max-width: 600px;
+    margin: auto;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+}
