@@ -149,6 +149,14 @@ io.on("connection", (socket) => {
     io.emit("offlineusers",[...onlineusers]);
   });
 
+  socket.on("sendMessage", async (data) => {
+    const { sender, receiver, content, roomId } = data;
+    const message = await Message.create({ sender, receiver, content, roomId });
+    
+    io.to(roomId).emit("receiveMessage", message);
+    
+  })
+
 
 });
 /* =========================
