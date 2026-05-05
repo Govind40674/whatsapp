@@ -355,3 +355,85 @@
     transform: scale(1);
   }
 }
+/* 🔹 Container for status */
+.headercentrebetweenright {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+}
+
+/* 🔹 Base circle */
+.onlineStatus,
+.offlineStatus {
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+}
+
+/* 🟢 ONLINE */
+.onlineStatus {
+  background-color: #22c55e; /* green */
+}
+
+/* 🔴 OFFLINE */
+.offlineStatus {
+  background-color: #9ca3af; /* gray */
+}
+
+/* =========================
+   📱 MOBILE (default)
+========================= */
+.onlineStatus,
+.offlineStatus {
+  width: 8px;
+  height: 8px;
+}
+
+/* =========================
+   📱 TABLET
+========================= */
+@media (min-width: 481px) {
+  .onlineStatus,
+  .offlineStatus {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* =========================
+   💻 DESKTOP
+========================= */
+@media (min-width: 769px) {
+  .onlineStatus,
+  .offlineStatus {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* =========================
+   ✨ OPTIONAL GLOW EFFECT
+========================= */
+.onlineStatus::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background-color: rgba(34, 197, 94, 0.3);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}

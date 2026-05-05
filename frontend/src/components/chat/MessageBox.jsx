@@ -7,8 +7,11 @@ import useCall from "./useCall";
 import CallUI from "./CallUI";
 import { IoVideocam, IoCall } from "react-icons/io5";
 import { MdCallEnd } from "react-icons/md";
+import {useContext} from "react";
+import { MyContext } from "../create_context/MyContext";
 
 function MessageBox() {
+  const { onlineusers } = useContext(MyContext);
   const { email } = useParams();
   const decodedEmail = decodeURIComponent(email || "");
 
@@ -165,6 +168,14 @@ function MessageBox() {
 
         <div className={styles.headerCenter}>
           {chattingWith.name || "User"}
+        </div>
+
+        <div className={styles.headercentrebetweenright}>
+          {onlineusers.includes(decodedEmail) ? (
+            <div className={styles.onlineStatus}></div>
+          ) : (
+            <div className={styles.offlineStatus}></div>
+          )}
         </div>
 
         <div className={styles.headerRight}>
