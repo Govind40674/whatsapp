@@ -1,240 +1,392 @@
-/* 🔹 Main container */
+:global(html),
+:global(body),
+:global(#root) {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
 .container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr) 64px;
   width: 100%;
-  background-color: #f5f5f5;
+  height: 100dvh;
+  background: #efeae2;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
 }
 
-/* =========================
-   🔝 HEADER
-========================= */
+/* pattern */
+.container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .header {
-  display: flex;
+  position: relative;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px;
-  background: #ffffff;
-  border-bottom: 1px solid #ddd;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f0f2f5;
+  border-bottom: 1px solid #d9d9d9;
 }
 
-/* Left (profile) */
 .headerLeft {
   display: flex;
   align-items: center;
 }
 
-.profilePic {
-  width: 40px;
-  height: 40px;
+.profilePic,
+.defaultAvatar {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
+}
+
+.profilePic {
+  object-fit: cover;
 }
 
 .defaultAvatar {
-  width: 40px;
-  height: 40px;
-  background: #ccc;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  background: #25d366;
+  color: #fff;
+  font-weight: 700;
 }
 
-/* Center (name) */
 .headerCenter {
-  flex: 1;
-  margin-left: 10px;
+  font-size: 1rem;
   font-weight: 600;
+  color: #111b21;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Status (dot) */
-.headercentrebetweenright {
+.headerRight {
   display: flex;
   align-items: center;
-  margin-right: 10px;
+  gap: 6px;
 }
 
-.onlineStatus,
-.offlineStatus {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.onlineStatus {
-  background-color: #22c55e;
-}
-
-.offlineStatus {
-  background-color: #9ca3af;
-}
-
-/* Right (buttons) */
 .headerRight button {
-  margin-left: 5px;
+  width: 38px;
+  height: 38px;
   border: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
   background: transparent;
-  font-size: 18px;
+  color: #54656f;
+  font-size: 1.15rem;
   cursor: pointer;
 }
 
-/* =========================
-   💬 CHAT AREA
-========================= */
 .chatArea {
-  flex: 1;
+  position: relative;
+  z-index: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 10px;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-/* Message bubbles */
+.sent,
+.received {
+  max-width: 80%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  word-break: break-word;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
 .sent {
   align-self: flex-end;
-  background: #dcf8c6;
-  padding: 8px 12px;
-  margin: 5px;
-  border-radius: 10px;
-  max-width: 70%;
+  background: #d9fdd3;
+  color: #111b21;
+  border-top-right-radius: 2px;
 }
 
 .received {
   align-self: flex-start;
-  background: #ffffff;
-  padding: 8px 12px;
-  margin: 5px;
-  border-radius: 10px;
-  max-width: 70%;
+  background: #fff;
+  color: #111b21;
+  border-top-left-radius: 2px;
 }
 
-/* =========================
-   ✍️ INPUT AREA
-========================= */
 .inputArea {
+  position: relative;
+  z-index: 6;
   display: flex;
-  padding: 8px;
-  background: #fff;
-  border-top: 1px solid #ddd;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  background: #f0f2f5;
+  border-top: 1px solid #d9d9d9;
 }
 
 .inputArea input {
   flex: 1;
-  padding: 8px;
-  border-radius: 20px;
-  border: 1px solid #ccc;
+  min-width: 0;
+  height: 44px;
+  border: none;
   outline: none;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: #fff;
+  font-size: 0.95rem;
+  color: #111b21;
 }
 
 .sendBtn {
-  margin-left: 8px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   border: none;
-  background: #22c55e;
-  color: white;
-  padding: 8px 12px;
   border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
   cursor: pointer;
 }
 
-/* =========================
-   📞 CALL OVERLAY
-========================= */
-.callOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+@media (max-width: 768px) {
+  .container {
+    grid-template-rows: 60px minmax(0, 1fr) 60px;
+  }
+
+  .header {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .profilePic,
+  .defaultAvatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .sent,
+  .received {
+    max-width: 86%;
+  }
+
+  .inputArea input,
+  .sendBtn {
+    height: 42px;
+  }
+
+  .sendBtn {
+    width: 42px;
+    min-width: 42px;
+  }
 }
 
-.callCard {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-}
-
-.avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-}
-
-.avatarFallback {
-  width: 80px;
-  height: 80px;
-  background: #ccc;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.callButtons {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 15px;
-}
-
-.acceptBtn {
-  background: green;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 50%;
-}
-
-.rejectBtn {
-  background: red;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 50%;
-}
-
-/* =========================
-   📱 MOBILE
-========================= */
 @media (max-width: 480px) {
-  .profilePic {
-    width: 35px;
-    height: 35px;
+  .container {
+    grid-template-rows: 56px minmax(0, 1fr) 56px;
+  }
+
+  .headerRight button {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .profilePic,
+  .defaultAvatar {
+    width: 34px;
+    height: 34px;
   }
 
   .headerCenter {
-    font-size: 14px;
+    font-size: 0.92rem;
   }
 
-  .sent, .received {
-    max-width: 85%;
-    font-size: 14px;
+  .chatArea {
+    padding: 10px 8px;
+  }
+
+  .sent,
+  .received {
+    max-width: 90%;
+    font-size: 0.9rem;
+  }
+
+  .inputArea {
+    padding: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .inputArea input,
+  .sendBtn {
+    height: 40px;
+  }
+
+  .sendBtn {
+    width: 40px;
+    min-width: 40px;
+  }
+}
+/* FULL SCREEN OVERLAY */
+.callOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+/* CARD */
+.callCard {
+  text-align: center;
+  color: white;
+  animation: fadeIn 0.3s ease;
+}
+
+/* AVATAR */
+.avatarWrapper {
+  margin-bottom: 15px;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+}
+
+.avatarFallback {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #444;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+}
+
+/* TEXT */
+.callerName {
+  margin: 10px 0 5px;
+  font-size: 22px;
+}
+
+.callText {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* BUTTONS */
+.callButtons {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+}
+
+.acceptBtn,
+.rejectBtn {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* ACCEPT */
+.acceptBtn {
+  background: #22c55e;
+  color: white;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+
+.acceptBtn:hover {
+  transform: scale(1.1);
+}
+
+/* REJECT */
+.rejectBtn {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+.rejectBtn:hover {
+  transform: scale(1.1);
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-/* =========================
-   📱 TABLET
-========================= */
-@media (min-width: 481px) and (max-width: 768px) {
-  .sent, .received {
-    max-width: 75%;
-  }
+
+/* 🔹 Wrap name + status */
+.headerCenterWrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 🔹 Status text */
+.statusWrapper {
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+/* 🟢 ONLINE */
+.onlineStatus {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+/* ⚪ OFFLINE */
+.offlineStatus {
+  color: #6b7280;
 }
 
 /* =========================
-   💻 DESKTOP
+   📱 MOBILE TUNING
 ========================= */
-@media (min-width: 769px) {
-  .container {
-    max-width: 700px;
-    margin: auto;
-    border: 1px solid #ddd;
-  }
-
-  .sent, .received {
-    max-width: 60%;
+@media (max-width: 480px) {
+  .statusWrapper {
+    font-size: 0.7rem;
   }
 }
