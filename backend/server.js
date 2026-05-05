@@ -146,7 +146,7 @@ io.on("connection", (socket) => {
 
   socket.on("user_offline", (email) => {
     onlineusers.delete(email);
-    socket.broadcast.emit("offlineusers",[...onlineusers]);
+    io.emit("offlineusers",[...onlineusers]);
   });
 
 

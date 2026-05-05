@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaEllipsisV } from "react-icons/fa";
+import {socket} from "../../chat/socket"
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -21,6 +22,8 @@ export default function Header() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
+    socket.emit("user_offline", ownemail);
+
     window.location.reload();
   };
 
