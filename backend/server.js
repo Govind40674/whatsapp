@@ -49,6 +49,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+const onlineusers=new Set();
+
 /* =========================
    🔥 SOCKET.IO LOGIC
 ========================= */
@@ -135,13 +137,16 @@ io.on("connection", (socket) => {
     }, 2000); // 2 sec delay is enough
   });
   socket.on("user_online",  (email) => {
+    onlineusers.add(email);
+    io.emit("onlineusers",[...onlineusers]);
     
-    socket.broadcast.emit("onlineusers",email);
+    
 
   });
 
   socket.on("user_offline", (email) => {
-    socket.broadcast.emit("offlineusers",email);
+    onlineusers.delete(email);
+    socket.broadcast.emit("offlineusers",[...onlineusers]);
   });
 
 

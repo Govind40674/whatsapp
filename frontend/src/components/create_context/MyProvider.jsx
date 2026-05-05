@@ -11,16 +11,12 @@ function MyProvider({ children }) {
 useEffect(() => {
   // ✅ define handlers (VERY IMPORTANT)
   const handleOnline = (data) => {
-    setOnlineUsers((prev) => {
-      if (prev.includes(data)) return prev; // avoid duplicate
-      return [...prev, data];
-    });
+    setOnlineUsers(data);
   };
 
   const handleOffline = (data) => {
-    setOnlineUsers((prev) =>
-      prev.filter((user) => user !== data) // remove user
-    );
+     setOnlineUsers(data);
+
   };
 
   // ✅ attach listeners
