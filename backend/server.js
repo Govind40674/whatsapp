@@ -136,12 +136,12 @@ io.on("connection", (socket) => {
   });
   socket.on("user_online",  (email) => {
     
-    socket.broadcast.emit("onlineusers", { email });
+    socket.broadcast.emit("onlineusers",email);
 
   });
 
   socket.on("user_offline", (email) => {
-    socket.broadcast.emit("offlineusers", { email });
+    socket.broadcast.emit("offlineusers",email);
   });
 
 
