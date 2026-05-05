@@ -44,7 +44,7 @@ function Member() {
               <div className={styles.name}>{m.name}</div>
             </div>
             <div className={styles.dot}>
-              {onlineusers.includes(m.email) && <div className={styles.dotOnline}></div>}
+              {onlineusers.includes(m.email) && <div className={styles.dotOnline}>Online</div>}
             </div>
           </div>
         ))
