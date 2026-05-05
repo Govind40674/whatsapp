@@ -357,3 +357,36 @@
 }
 
 
+/* 🔹 Wrap name + status */
+.headerCenterWrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 🔹 Status text */
+.statusWrapper {
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+/* 🟢 ONLINE */
+.onlineStatus {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+/* ⚪ OFFLINE */
+.offlineStatus {
+  color: #6b7280;
+}
+
+/* =========================
+   📱 MOBILE TUNING
+========================= */
+@media (max-width: 480px) {
+  .statusWrapper {
+    font-size: 0.7rem;
+  }
+}
