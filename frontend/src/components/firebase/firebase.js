@@ -19,7 +19,8 @@ export const getFCMToken = async () => {
 
     if (permission === "granted") {
       const token = await getToken(messaging, {
-        vapidKey: "👉 PASTE YOUR VAPID KEY HERE",
+        // vapidKey: "👉 PASTE YOUR VAPID KEY HERE",
+        vapidKey: "BBiGEjecww5_nJttrAf3jH3rl4S7yP9e4iCmSve5KYTAi1MUC9pRYSb5LwT-hFulVfiZbJX-Xaz7IcFTvXEeq18"
       });
 
       console.log("🔥 FCM Token:", token);
