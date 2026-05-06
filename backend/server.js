@@ -176,6 +176,7 @@ socket.on("sendMessage", async (data) => {
     io.to(roomId).emit("receiveMessage", message);
   } else {
     // 🔥 OFFLINE → send notification
+    io.to(roomId).emit("receiveMessage", message);
     const user = await User.findOne({ email: receiver });
 
     if (user?.fcmToken) {
