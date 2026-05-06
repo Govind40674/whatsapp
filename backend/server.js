@@ -113,9 +113,10 @@ io.on("connection", (socket) => {
   ========================= */
   socket.on("disconnect", () => {
     console.log("❌ Disconnected:", socket.id);
-
-    onlineusers.delete(email);
-    io.emit("offlineusers", [...onlineusers]);
+    if (socket.email) {
+      onlineusers.delete(socket.email);
+      io.emit("onlineusers", [...onlineusers]);
+    }
 
     const roomId = socket.roomId;
 
@@ -139,6 +140,7 @@ io.on("connection", (socket) => {
   });
   socket.on("user_online", (email) => {
     onlineusers.add(email);
+    socket.email = email;
     io.emit("onlineusers", [...onlineusers]);
   });
 
