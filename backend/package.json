@@ -1,7 +1,8 @@
 {
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node --watch server.js"
+    "start": "node --watch server.js",
+    "type":"module"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
