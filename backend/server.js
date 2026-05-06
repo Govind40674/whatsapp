@@ -1,5 +1,20 @@
 import dotenv from "dotenv";
 dotenv.config();
+import admin from "./firebase.js";
+
+async function sendNotification(token, sender, text) {
+  try {
+    await admin.messaging().send({
+      token,
+      notification: {
+        title: `New message from ${sender}`,
+        body: text,
+      },
+    });
+  } catch (err) {
+    console.log("Notification error:", err);
+  }
+}
 
 import express from "express";
 
@@ -144,17 +159,30 @@ io.on("connection", (socket) => {
     io.emit("onlineusers", [...onlineusers]);
   });
 
-  socket.on("user_offline", (email) => {
-    onlineusers.delete(email);
-    io.emit("offlineusers", [...onlineusers]);
+
+
+socket.on("sendMessage", async (data) => {
+  const { sender, receiver, content, roomId } = data;
+
+  const message = await Message.create({
+    sender,
+    receiver,
+    content,
+    roomId,
   });
 
-  socket.on("sendMessage", async (data) => {
-    const { sender, receiver, content, roomId } = data;
-    const message = await Message.create({ sender, receiver, content, roomId });
-
+  if (onlineusers.has(receiver)) {
+    // ✅ online → normal chat
     io.to(roomId).emit("receiveMessage", message);
-  });
+  } else {
+    // 🔥 OFFLINE → send notification
+    const user = await User.findOne({ email: receiver });
+
+    if (user?.fcmToken) {
+      await sendNotification(user.fcmToken, sender, content);
+    }
+  }
+});
 });
 /* =========================
    🔹 FETCH MESSAGES
@@ -172,6 +200,17 @@ app.post("/messages", async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Error fetching messages" });
   }
+});
+
+app.post("/save-token", async (req, res) => {
+  const { email, token } = req.body;
+
+  await User.findOneAndUpdate(
+    { email },
+    { fcmToken: token }
+  );
+
+  res.json({ success: true });
 });
 
 /* =========================

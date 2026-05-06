@@ -4,39 +4,44 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true
- 
+    unique: true,
   },
   password: {
     type: String,
-    required: true
+    required: true,
   },
-  name:{
+  name: {
     type: String,
-    default: "Bot"
-    
+    default: "Bot",
   },
-  email_friends:{
-    type: [{
-      name: String,
-      email: String,
-      image: String
-    }],
-    default: []
+  email_friends: {
+    type: [
+      {
+        name: String,
+        email: String,
+        image: String,
+      },
+    ],
+    default: [],
   },
 
   image: {
-  type: String,
-  default: "https://ui-avatars.com/api/?name=User&background=random&color=fff"
-},
-  requests:{
-    type: [String],
-    default: []
+    type: String,
+    default:
+      "https://ui-avatars.com/api/?name=User&background=random&color=fff",
   },
-  sent_requests:{
+  requests: {
     type: [String],
-    default: []
-  }
+    default: [],
+  },
+  sent_requests: {
+    type: [String],
+    default: [],
+  },
+  fcmToken: {
+    type: String,
+    default: "",
+  },
 });
 
 module.exports = mongoose.model("User", UserSchema);
