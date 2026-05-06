@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getMessaging, getToken } from "firebase/messaging";
 
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "whatsapp-2626c.firebaseapp.com",
-  projectId: "whatsapp-2626c",
-  storageBucket: "whatsapp-2626c.firebasestorage.app",
-  messagingSenderId: "436835470842",
-  appId: "1:436835470842:web:88db08f5a3ade46ac5a843",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -19,8 +19,7 @@ export const getFCMToken = async () => {
 
     if (permission === "granted") {
       const token = await getToken(messaging, {
-        // vapidKey: "👉 PASTE YOUR VAPID KEY HERE",
-        vapidKey: "BBiGEjecww5_nJttrAf3jH3rl4S7yP9e4iCmSve5KYTAi1MUC9pRYSb5LwT-hFulVfiZbJX-Xaz7IcFTvXEeq18"
+        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
       });
 
       console.log("🔥 FCM Token:", token);
