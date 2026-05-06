@@ -2,20 +2,32 @@ import { initializeApp } from "firebase/app";
 import { getMessaging, getToken } from "firebase/messaging";
 
 const firebaseConfig = {
-  apiKey: "YOUR_KEY",
-  authDomain: "YOUR_DOMAIN",
-  projectId: "YOUR_ID",
-  messagingSenderId: "YOUR_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSy...",
+  authDomain: "whatsapp-2626c.firebaseapp.com",
+  projectId: "whatsapp-2626c",
+  storageBucket: "whatsapp-2626c.firebasestorage.app",
+  messagingSenderId: "436835470842",
+  appId: "1:436835470842:web:88db08f5a3ade46ac5a843",
 };
 
 const app = initializeApp(firebaseConfig);
-export const messaging = getMessaging(app);
+const messaging = getMessaging(app);
 
 export const getFCMToken = async () => {
-  const token = await getToken(messaging, {
-    vapidKey: "YOUR_VAPID_KEY",
-  });
+  try {
+    const permission = await Notification.requestPermission();
 
-  return token;
+    if (permission === "granted") {
+      const token = await getToken(messaging, {
+        vapidKey: "👉 PASTE YOUR VAPID KEY HERE",
+      });
+
+      console.log("🔥 FCM Token:", token);
+      return token;
+    } else {
+      console.log("❌ Notification permission denied");
+    }
+  } catch (err) {
+    console.error("Token error:", err);
+  }
 };
