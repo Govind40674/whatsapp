@@ -13,7 +13,15 @@ function Home() {
   }, []);
   return (
     <>
-      <button onClick={getFCMToken}>Enable Notifications 🔔</button>
+      {/* <button onClick={getFCMToken}>Enable Notifications 🔔</button> */}
+      <button
+        onClick={() => {
+          console.log("Button clicked");
+          getFCMToken();
+        }}
+      >
+        Enable Notifications 🔔
+      </button>
       <Header />
       <Member />
       <Search_icon />
