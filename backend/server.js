@@ -23,7 +23,6 @@ import Message from "./Schema/message.js";
 const app = express();
 const server = http.createServer(app);
 
-
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:5174", "https://looptalk-gfr8.onrender.com"],
@@ -32,8 +31,6 @@ const io = new Server(server, {
   allowEIO3: true,
   transports: ["websocket", "polling"],
 });
-
-
 
 app.use(
   cors({
@@ -49,7 +46,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-const onlineusers=new Set();
+const onlineusers = new Set();
 
 /* =========================
    🔥 SOCKET.IO LOGIC
@@ -117,7 +114,11 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("❌ Disconnected:", socket.id);
 
+    onlineusers.delete(email);
+    io.emit("offlineusers", [...onlineusers]);
+
     const roomId = socket.roomId;
+
     if (!roomId) return;
 
     // wait to check if it's refresh or actual leave
@@ -136,28 +137,22 @@ io.on("connection", (socket) => {
       // 🔁 If 2 users again → refresh happened → do nothing
     }, 2000); // 2 sec delay is enough
   });
-  socket.on("user_online",  (email) => {
+  socket.on("user_online", (email) => {
     onlineusers.add(email);
-    io.emit("onlineusers",[...onlineusers]);
-    
-    
-
+    io.emit("onlineusers", [...onlineusers]);
   });
 
   socket.on("user_offline", (email) => {
     onlineusers.delete(email);
-    io.emit("offlineusers",[...onlineusers]);
+    io.emit("offlineusers", [...onlineusers]);
   });
 
   socket.on("sendMessage", async (data) => {
     const { sender, receiver, content, roomId } = data;
     const message = await Message.create({ sender, receiver, content, roomId });
-    
+
     io.to(roomId).emit("receiveMessage", message);
-    
-  })
-
-
+  });
 });
 /* =========================
    🔹 FETCH MESSAGES
