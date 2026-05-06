@@ -14,14 +14,11 @@ useEffect(() => {
     setOnlineUsers(data);
   };
 
-  const handleOffline = (data) => {
-     setOnlineUsers(data);
 
-  };
 
   // ✅ attach listeners
   socket.on("onlineusers", handleOnline);
-  socket.on("offlineusers", handleOffline);
+ 
 
   // ✅ tell server I'm online
   socket.emit("user_online", myemail);
@@ -29,10 +26,10 @@ useEffect(() => {
   // ✅ cleanup
   return () => {
     socket.off("onlineusers", handleOnline);
-    socket.off("offlineusers", handleOffline);
+    
 
     // notify server
-    socket.emit("user_offline", myemail);
+    
   };
 }, []);
 
