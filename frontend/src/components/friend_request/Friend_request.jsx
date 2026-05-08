@@ -20,8 +20,8 @@ function Friend_request() {
         { withCredentials: true },
       );
       // setRequests(res.data);
-      if (res.data.message === "already friend") {
-        setResult("Already friends 😔");
+      if (res.data.message === "already friend" || res.data.message === "Cannot add yourself" || res.data.message === "user not found" || res.data.message === "Missing fields") {
+        setResult(res.data.message);
       } else {
         setRequests(res.data);
       }
