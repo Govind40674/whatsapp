@@ -15,6 +15,7 @@ const messaging = getMessaging(app);
 
 export const getFCMToken = async () => {
   try {
+    alert(Notification.permission);
     const permission = await Notification.requestPermission();
 
     if (permission === "granted") {

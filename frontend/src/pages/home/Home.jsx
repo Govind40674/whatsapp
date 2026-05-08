@@ -14,14 +14,14 @@ function Home() {
   return (
     <>
      
-      {/* <button
+      <button
         onClick={() => {
           console.log("Button clicked");
           getFCMToken();
         }}
       >
         Enable Notifications 🔔
-      </button> */}
+      </button>
       <Header />
       <Member />
       <Search_icon />
