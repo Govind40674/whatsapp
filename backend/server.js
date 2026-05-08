@@ -204,11 +204,11 @@ app.post("/messages", async (req, res) => {
 });
 
 app.post("/save-token", async (req, res) => {
-  const { email, token } = req.body;
+  const { email, fcmToken} = req.body;
 
   await User.findOneAndUpdate(
     { email },
-    { fcmToken: token }
+    { fcmToken: fcmToken },
   );
 
   res.json({ success: true });

@@ -22,11 +22,13 @@ function Home() {
   const savetoken = async () => {
     try {
       const token=await getFCMToken();
-      await axios.post(`${import.meta.env.VITE_URL}/save-token`, {
+      const res=await axios.post(`${import.meta.env.VITE_URL}/save-token`, {
         email: localStorage.getItem("email"),
         fcmToken: token,
       });
       alert("Token saved");
+      console.log(res);
+
     } catch (error) {
       console.error(error);
     }
