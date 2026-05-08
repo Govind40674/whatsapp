@@ -4,21 +4,21 @@ import admin from "./firebase.js";
 
 async function sendNotification(token, sender, text) {
   try {
-    await admin.messaging().send({
-      token,
-      notification: {
-        title: `New message from ${sender}`,
-        body: text,
-      },
-    });
     // await admin.messaging().send({
     //   token,
-
-    //   data: {
+    //   notification: {
     //     title: `New message from ${sender}`,
     //     body: text,
     //   },
     // });
+    await admin.messaging().send({
+      token,
+
+      data: {
+        title: `New message from ${sender}`,
+        body: text,
+      },
+    });
   } catch (err) {
     console.log("Notification error:", err);
   }
