@@ -4,7 +4,8 @@ import Member from "../../components/member_lists/Member";
 import Header from "../../components/header/Header";
 import Search_icon from "../../components/search_icon/Search_icon";
 import Footer from "../../components/footer/Footer";
-// import axios from "axios";
+
+import axios from "axios";
 import { getFCMToken } from "../../components/firebase/firebase";
 
 function Home() {
@@ -18,13 +19,24 @@ function Home() {
   useEffect(() => {
     getFCMToken();
   }, []);
+  const savetoken = async () => {
+    try {
+      const token=await getFCMToken();
+      await axios.post(`${import.meta.env.VITE_URL}/save-token`, {
+        email: localStorage.getItem("email"),
+        fcmToken: token,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <>
       <button
         onClick={() => {
           console.log("Button clicked");
-          getFCMToken();
+          savetoken();
         }}
       >
         Enable Notifications 🔔
