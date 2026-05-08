@@ -26,6 +26,7 @@ function Home() {
         email: localStorage.getItem("email"),
         fcmToken: token,
       });
+      alert("Token saved");
     } catch (error) {
       console.error(error);
     }
