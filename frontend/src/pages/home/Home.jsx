@@ -9,41 +9,41 @@ import axios from "axios";
 import { getFCMToken } from "../../components/firebase/firebase";
 
 function Home() {
-  useEffect(() => {
-    navigator.serviceWorker.getRegistrations().then((r) => {
-      console.log("SW Registrations:", r);
+  // useEffect(() => {
+  //   navigator.serviceWorker.getRegistrations().then((r) => {
+  //     console.log("SW Registrations:", r);
 
-      alert("SW count: " + r.length);
-    });
-  }, []);
+  //     alert("SW count: " + r.length);
+  //   });
+  // }, []);
   useEffect(() => {
-    getFCMToken();
+    const token=getFCMToken();
+    const savetoken = async () => {
+      try {
+        // const token = await getFCMToken();
+        const res = await axios.post(`${import.meta.env.VITE_URL}/save-token`, {
+          email: localStorage.getItem("email"),
+          fcmToken: token,
+        });
+        // alert("Token saved");
+        console.log(res);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    savetoken();
   }, []);
-  const savetoken = async () => {
-    try {
-      const token=await getFCMToken();
-      const res=await axios.post(`${import.meta.env.VITE_URL}/save-token`, {
-        email: localStorage.getItem("email"),
-        fcmToken: token,
-      });
-      alert("Token saved");
-      console.log(res);
-
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   return (
     <>
-      <button
+      {/* <button
         onClick={() => {
           console.log("Button clicked");
           savetoken();
         }}
       >
         Enable Notifications 🔔
-      </button>
+      </button> */}
       <Header />
       <Member />
       <Search_icon />
