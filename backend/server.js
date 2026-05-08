@@ -4,9 +4,17 @@ import admin from "./firebase.js";
 
 async function sendNotification(token, sender, text) {
   try {
+    // await admin.messaging().send({
+    //   token,
+    //   notification: {
+    //     title: `New message from ${sender}`,
+    //     body: text,
+    //   },
+    // });
     await admin.messaging().send({
       token,
-      notification: {
+
+      data: {
         title: `New message from ${sender}`,
         body: text,
       },
@@ -159,31 +167,29 @@ io.on("connection", (socket) => {
     io.emit("onlineusers", [...onlineusers]);
   });
 
+  socket.on("sendMessage", async (data) => {
+    const { sender, receiver, content, roomId } = data;
 
+    const message = await Message.create({
+      sender,
+      receiver,
+      content,
+      roomId,
+    });
 
-socket.on("sendMessage", async (data) => {
-  const { sender, receiver, content, roomId } = data;
+    if (onlineusers.has(receiver)) {
+      // ✅ online → normal chat
+      io.to(roomId).emit("receiveMessage", message);
+    } else {
+      // 🔥 OFFLINE → send notification
+      io.to(roomId).emit("receiveMessage", message);
+      const user = await User.findOne({ email: receiver });
 
-  const message = await Message.create({
-    sender,
-    receiver,
-    content,
-    roomId,
-  });
-
-  if (onlineusers.has(receiver)) {
-    // ✅ online → normal chat
-    io.to(roomId).emit("receiveMessage", message);
-  } else {
-    // 🔥 OFFLINE → send notification
-    io.to(roomId).emit("receiveMessage", message);
-    const user = await User.findOne({ email: receiver });
-
-    if (user?.fcmToken) {
-      await sendNotification(user.fcmToken, sender, content);
+      if (user?.fcmToken) {
+        await sendNotification(user.fcmToken, sender, content);
+      }
     }
-  }
-});
+  });
 });
 /* =========================
    🔹 FETCH MESSAGES
@@ -204,12 +210,9 @@ app.post("/messages", async (req, res) => {
 });
 
 app.post("/save-token", async (req, res) => {
-  const { email, fcmToken} = req.body;
+  const { email, fcmToken } = req.body;
 
-  await User.findOneAndUpdate(
-    { email },
-    { fcmToken: fcmToken },
-  );
+  await User.findOneAndUpdate({ email }, { fcmToken: fcmToken });
 
   res.json({ success: true });
 });
