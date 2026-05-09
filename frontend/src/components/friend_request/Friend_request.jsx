@@ -1,75 +1,97 @@
-import React from "react";
+import React, { useState } from "react";
 import styles from "./Friend_request.module.css";
 import axios from "axios";
-import { useState } from "react";
 import Footer from "../footer/Footer";
-
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useForm } from "react-hook-form";
+import EmailSchema from "../validation/input/EmailSchema";
 
 function Friend_request() {
-  // const [open, setOpen] =useState(false);
   const [requests, setRequests] = useState("");
-  const [emailinput, setEmailInput] = useState("");
   const [result, setResult] = useState("");
-  // const ownemail = localStorage.getItem("token.email");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(EmailSchema),
+  });
+
   const ownemail = localStorage.getItem("email");
-  console.log("ownemail:", ownemail);
-  const fetchRequests = async () => {
+
+  // search user
+  const fetchRequests = async (data) => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_URL}/friend-requests`,
-        { email: emailinput, ownemail: ownemail },
-        { withCredentials: true },
+        {
+          email: data.email,
+          ownemail: ownemail,
+        },
+        { withCredentials: true }
       );
-      // setRequests(res.data);
-      if (res.data.message === "already friend" || res.data.message === "Cannot add yourself" || res.data.message === "user not found" || res.data.message === "Missing fields") {
+
+      if (
+        res.data.message === "already friend" ||
+        res.data.message === "Cannot add yourself" ||
+        res.data.message === "user not found" ||
+        res.data.message === "Missing fields"
+      ) {
         setResult(res.data.message);
+        setRequests("");
       } else {
         setRequests(res.data);
+        setResult("");
       }
     } catch (err) {
       console.error(err);
     }
   };
+
+  // send request
   const handleSendRequest = async () => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_URL}/send-friend-request`,
         {
-          email: emailinput,
+          email: requests.email,
           ownemail: ownemail,
         },
-        { withCredentials: true },
+        { withCredentials: true }
       );
+
       if (res.status === 200) {
         setResult(res.data.message);
         setRequests("");
       }
-
-      // setResult(res.data.message);
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handlkeydown = (e) => {
-    if (e.key === "Enter") {
-      fetchRequests();
-    }
-  };
-  // const navigate = useNavigate();
-
   return (
     <>
-      <div className={styles.container}>
+      <form
+        className={styles.container}
+        onSubmit={handleSubmit(fetchRequests)}
+      >
         <input
           type="text"
           className={styles.email}
-          onKeyDown={handlkeydown}
           placeholder="Enter email..."
-          onChange={(e) => setEmailInput(e.target.value)}
+          {...register("email")}
         />
-      </div>
+
+        <button type="submit">Search</button>
+      </form>
+
+      {errors.email && (
+        <p className={styles.error}>{errors.email.message}</p>
+      )}
+
       {result && <div className={styles.result}>{result}</div>}
+
       {requests && (
         <div className={styles.send_requests}>
           <img src={requests.image} alt="" />
@@ -81,7 +103,8 @@ function Friend_request() {
           </button>
         </div>
       )}
-      <Footer/>
+
+      <Footer />
     </>
   );
 }
