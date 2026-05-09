@@ -17,20 +17,23 @@ function Home() {
   //   });
   // }, []);
   useEffect(() => {
-    const token=getFCMToken();
     const savetoken = async () => {
       try {
-        // const token = await getFCMToken();
+        const token = await getFCMToken();
+
+        if (!token) return;
+
         const res = await axios.post(`${import.meta.env.VITE_URL}/save-token`, {
           email: localStorage.getItem("email"),
           fcmToken: token,
         });
-        // alert("Token saved");
-        console.log(res);
+
+        console.log(res.data);
       } catch (error) {
         console.error(error);
       }
     };
+
     savetoken();
   }, []);
 

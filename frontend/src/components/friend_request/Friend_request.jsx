@@ -24,6 +24,7 @@ function Friend_request() {
   // search user
   const fetchRequests = async (data) => {
     try {
+      console.log("button clicked");
       const res = await axios.post(
         `${import.meta.env.VITE_URL}/friend-requests`,
         {

@@ -204,11 +204,32 @@ app.post("/messages", async (req, res) => {
 });
 
 app.post("/save-token", async (req, res) => {
-  const { email, fcmToken } = req.body;
+  try {
+    const { email, fcmToken } = req.body;
 
-  await User.findOneAndUpdate({ email }, { fcmToken: fcmToken });
+    if (!email || !fcmToken) {
+      return res.status(400).json({
+        message: "Missing fields",
+      });
+    }
 
-  res.json({ success: true });
+    await User.findOneAndUpdate(
+      { email },
+      { fcmToken }
+    );
+
+    res.json({
+      success: true,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
 });
 
 /* =========================
