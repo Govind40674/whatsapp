@@ -49,6 +49,10 @@ function Friend_request() {
         setResult("");
       }
     } catch (err) {
+      console.log(err.response?.data);
+
+      setResult(err.response?.data?.message);
+
       console.error(err);
     }
   };

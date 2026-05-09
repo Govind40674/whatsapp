@@ -368,11 +368,11 @@ app.post("/friend-requests", async (req, res) => {
 
   try {
     if (!email || !ownemail) {
-      return res.status(400).json({ message: "Missing fields" });
+      return res.json({ message: "Missing fields" });
     }
 
     if (email === ownemail) {
-      return res.status(400).json({ message: "Cannot add yourself" });
+      return res.json({ message: "Cannot add yourself" });
     }
 
     // ✅ FIX: check inside object array
