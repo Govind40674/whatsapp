@@ -2,6 +2,7 @@ import React from "react";
 import styles from "./Friend_request.module.css";
 import axios from "axios";
 import { useState } from "react";
+import Footer from "../footer/Footer";
 
 
 function Friend_request() {
@@ -80,6 +81,7 @@ function Friend_request() {
           </button>
         </div>
       )}
+      <Footer/>
     </>
   );
 }
