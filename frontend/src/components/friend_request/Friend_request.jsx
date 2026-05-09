@@ -25,6 +25,8 @@ function Friend_request() {
   const fetchRequests = async (data) => {
     try {
       console.log("button clicked");
+      console.log("ownemail:", ownemail);
+      console.log(data.email);
       const res = await axios.post(
         `${import.meta.env.VITE_URL}/friend-requests`,
         {

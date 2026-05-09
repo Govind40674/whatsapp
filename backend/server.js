@@ -364,6 +364,7 @@ app.post("/login", async (req, res) => {
 
 app.post("/friend-requests", async (req, res) => {
   const { email, ownemail } = req.body;
+   console.log(req.body);
 
   try {
     if (!email || !ownemail) {
