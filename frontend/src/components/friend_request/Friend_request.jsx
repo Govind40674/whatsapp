@@ -5,6 +5,7 @@ import Footer from "../footer/Footer";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
 import EmailSchema from "../validation/input/EmailSchema";
+import Header from "../header/Header";
 
 function Friend_request() {
   const [requests, setRequests] = useState("");
@@ -29,7 +30,7 @@ function Friend_request() {
           email: data.email,
           ownemail: ownemail,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       if (
@@ -58,7 +59,7 @@ function Friend_request() {
           email: requests.email,
           ownemail: ownemail,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       if (res.status === 200) {
@@ -72,10 +73,8 @@ function Friend_request() {
 
   return (
     <>
-      <form
-        className={styles.container}
-        onSubmit={handleSubmit(fetchRequests)}
-      >
+      <Header />
+      <form className={styles.container} onSubmit={handleSubmit(fetchRequests)}>
         <input
           type="text"
           className={styles.email}
@@ -86,9 +85,7 @@ function Friend_request() {
         <button type="submit">Search</button>
       </form>
 
-      {errors.email && (
-        <p className={styles.error}>{errors.email.message}</p>
-      )}
+      {errors.email && <p className={styles.error}>{errors.email.message}</p>}
 
       {result && <div className={styles.result}>{result}</div>}
 
