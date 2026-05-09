@@ -73,7 +73,7 @@ function Friend_request() {
 
   return (
     <>
-      <Header />
+      {/* <Header /> */}
       <form className={styles.container} onSubmit={handleSubmit(fetchRequests)}>
         <input
           type="text"
